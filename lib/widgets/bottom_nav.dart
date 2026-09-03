@@ -11,53 +11,82 @@ class BottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  Widget item(IconData icon, String text, bool selected) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: selected ? Colors.black : Colors.grey,
-          size: 25,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          text,
-          style: TextStyle(
-            color: selected ? Colors.black : Colors.grey,
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+  Widget navItem({
+    required IconData icon,
+    required String text,
+    required bool selected,
+    required VoidCallback onPressed,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onPressed,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? Colors.black : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
           ),
-        )
-      ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: selected ? Colors.white : Colors.black54,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : Colors.black54,
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          height: 78,
+          height: 74,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(.72),
+            color: Colors.white.withOpacity(0.72),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.55),
+            ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              GestureDetector(
-                onTap: () => onTap(0),
-                child: item(Icons.menu_book, "热量库", index == 0),
+              navItem(
+                icon: Icons.menu_book_rounded,
+                text: "热量库",
+                selected: index == 0,
+                onPressed: () => onTap(0),
               ),
-              GestureDetector(
-                onTap: () => onTap(1),
-                child: item(Icons.add_circle_outline, "添加品牌", index == 1),
+              navItem(
+                icon: Icons.add_circle_outline_rounded,
+                text: "品牌",
+                selected: index == 1,
+                onPressed: () => onTap(1),
               ),
-              GestureDetector(
-                onTap: () => onTap(2),
-                child: item(Icons.casino_outlined, "转盘", index == 2),
+              navItem(
+                icon: Icons.casino_outlined,
+                text: "转盘",
+                selected: index == 2,
+                onPressed: () => onTap(2),
               ),
             ],
           ),

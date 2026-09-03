@@ -31,24 +31,30 @@ class _BrandPageState extends State<BrandPage> {
     setState(() {});
   }
 
-  Future<void> addFoodDialog() async {
-    final name = TextEditingController();
-    final kcal = TextEditingController();
+  Future<void> deleteFood(int id) async {
+    await DatabaseHelper.instance.deleteFood(id);
+    loadFoods();
+  }
 
-    final ok = await showModalBottomSheet<bool>(
+  // 添加产品
+  Future<void> addFood() async {
+    final nameController = TextEditingController();
+    final kcalController = TextEditingController();
+
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xffF5F5F7),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) {
+      builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.fromLTRB(
             22,
             20,
             22,
-            MediaQuery.of(context).viewInsets.bottom + 24,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -61,20 +67,15 @@ class _BrandPageState extends State<BrandPage> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 18),
               const Text(
                 "添加产品",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
               TextField(
-                controller: name,
+                controller: nameController,
                 decoration: InputDecoration(
                   hintText: "产品名称",
                   filled: true,
@@ -89,10 +90,10 @@ class _BrandPageState extends State<BrandPage> {
               const SizedBox(height: 14),
 
               TextField(
-                controller: kcal,
+                controller: kcalController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  hintText: "热量 (kcal)",
+                  hintText: "热量（kcal）",
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -102,7 +103,7 @@ class _BrandPageState extends State<BrandPage> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
               SizedBox(
                 width: double.infinity,
@@ -115,15 +116,31 @@ class _BrandPageState extends State<BrandPage> {
                     ),
                   ),
                   onPressed: () async {
-                    if (name.text.isEmpty || kcal.text.isEmpty) return;
+                    final name = nameController.text.trim();
+                    final kcal = int.tryParse(kcalController.text.trim());
 
-                    await DatabaseHelper.instance.addFood(
-                      brandId: widget.brandId,
-                      name: name.text.trim(),
-                      calories: int.parse(kcal.text),
-                    );
+                    if (name.isEmpty || kcal == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("请填写正确的产品名称和热量")),
+                      );
+                      return;
+                    }
 
-                    Navigator.pop(context, true);
+                    try {
+                      await DatabaseHelper.instance.addFood(
+                        brandId: widget.brandId,
+                        name: name,
+                        calories: kcal,
+                      );
+
+                      Navigator.pop(sheetContext, true);
+                    } catch (e) {
+                      debugPrint(e.toString());
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("保存失败：$e")),
+                      );
+                    }
                   },
                   child: const Text("保存产品"),
                 ),
@@ -134,14 +151,103 @@ class _BrandPageState extends State<BrandPage> {
       },
     );
 
-    if (ok == true) {
-      loadFoods();
+    if (result == true) {
+      await loadFoods();
     }
   }
 
-  Future<void> deleteFood(int id) async {
-    await DatabaseHelper.instance.deleteFood(id);
-    loadFoods();
+  // 编辑产品（长按）
+  Future<void> editFood(Map<String, dynamic> food) async {
+    final name = TextEditingController(text: food["name"]);
+    final kcal = TextEditingController(text: food["calories"].toString());
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xffF5F5F7),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            22,
+            20,
+            22,
+            MediaQuery.of(context).viewInsets.bottom + 22,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                "编辑产品",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 22),
+              TextField(
+                controller: name,
+                decoration: _input("产品名称"),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: kcal,
+                keyboardType: TextInputType.number,
+                decoration: _input("热量 (kcal)"),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  onPressed: () async {
+                    await DatabaseHelper.instance.updateFood(
+                      id: food["id"],
+                      name: name.text.trim(),
+                      calories: int.parse(kcal.text),
+                    );
+
+                    Navigator.pop(context, true);
+                  },
+                  child: const Text("保存修改"),
+                ),
+              )
+            ],
+          ),
+        );
+      },
+    );
+
+    if (ok == true) loadFoods();
+  }
+
+  InputDecoration _input(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+    );
   }
 
   @override
@@ -154,10 +260,8 @@ class _BrandPageState extends State<BrandPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F7),
-
       appBar: AppBar(
         backgroundColor: const Color(0xffF5F5F7),
-        elevation: 0,
         centerTitle: true,
         title: Text(
           widget.brandName,
@@ -165,17 +269,15 @@ class _BrandPageState extends State<BrandPage> {
         ),
         actions: [
           IconButton(
-            onPressed: addFoodDialog,
+            onPressed: addFood,
             icon: const Icon(Icons.add),
           )
         ],
       ),
-
       body: Column(
         children: [
-          /// 搜索
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
             child: Container(
               height: 48,
               decoration: BoxDecoration(
@@ -216,6 +318,7 @@ class _BrandPageState extends State<BrandPage> {
                   key: ValueKey(food["id"]),
                   direction: DismissDirection.endToStart,
                   background: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 24),
                     decoration: BoxDecoration(
@@ -223,50 +326,56 @@ class _BrandPageState extends State<BrandPage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
-                      Icons.delete,
+                      Icons.delete_outline,
                       color: Colors.white,
                     ),
                   ),
                   onDismissed: (_) => deleteFood(food["id"]),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            food["name"],
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w500,
+                  child: GestureDetector(
+                    onLongPress: () => editFood(food),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              food["name"],
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              "${food["calories"]}",
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                "${food["calories"]}",
+                                style: const TextStyle(
+                                  color: Color(0xff16A34A),
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const Text(
-                              "kcal",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11,
+                              const Text(
+                                "kcal",
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 11,
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 
 class AddFoodPage extends StatefulWidget {
-  const AddFoodPage({super.key});
+  final String category;
+
+  const AddFoodPage({
+    super.key,
+    required this.category,
+  });
 
   @override
   State<AddFoodPage> createState() => _AddFoodPageState();
@@ -11,13 +16,11 @@ class AddFoodPage extends StatefulWidget {
 class _AddFoodPageState extends State<AddFoodPage> {
   final TextEditingController nameController = TextEditingController();
 
-  String category = "奶茶店";
-
   Future<void> saveBrand() async {
     if (nameController.text.trim().isEmpty) return;
 
     await DatabaseHelper.instance.addBrand(
-      category: category,
+      category: widget.category,
       name: nameController.text.trim(),
     );
 
@@ -42,7 +45,10 @@ class _AddFoodPageState extends State<AddFoodPage> {
         centerTitle: true,
         title: const Text(
           "添加品牌",
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
       ),
       body: Padding(
@@ -53,11 +59,11 @@ class _AddFoodPageState extends State<AddFoodPage> {
             const Text(
               "品牌名称",
               style: TextStyle(
-                fontWeight: FontWeight.w600,
                 fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             Container(
               decoration: BoxDecoration(
@@ -69,8 +75,10 @@ class _AddFoodPageState extends State<AddFoodPage> {
                 decoration: const InputDecoration(
                   hintText: "例如：瑞幸咖啡",
                   border: InputBorder.none,
-                  contentPadding:
-                  EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
                 ),
               ),
             ),
@@ -78,37 +86,29 @@ class _AddFoodPageState extends State<AddFoodPage> {
             const SizedBox(height: 24),
 
             const Text(
-              "店铺分类",
+              "当前分类",
               style: TextStyle(
-                fontWeight: FontWeight.w600,
                 fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
-
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 16,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: category,
-                  isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(value: "奶茶店", child: Text("奶茶店")),
-                    DropdownMenuItem(value: "轻食店", child: Text("轻食店")),
-                    DropdownMenuItem(value: "甜品店", child: Text("甜品店")),
-                    DropdownMenuItem(value: "快餐店", child: Text("快餐店")),
-                    DropdownMenuItem(value: "咖啡店", child: Text("咖啡店")),
-                    DropdownMenuItem(value: "小吃店", child: Text("小吃店")),
-                    DropdownMenuItem(value: "其他", child: Text("其他")),
-                  ],
-                  onChanged: (v) {
-                    setState(() => category = v!);
-                  },
+              child: Text(
+                widget.category,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

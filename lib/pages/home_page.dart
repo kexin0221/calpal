@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../database/database_helper.dart';
 import '../widgets/bottom_nav.dart';
 import 'add_food_page.dart';
@@ -18,8 +17,6 @@ class _HomePageState extends State<HomePage> {
   int categoryIndex = 0;
   int navIndex = 0;
 
-  List<Map<String, dynamic>> brands = [];
-
   final List<String> categories = [
     "奶茶店",
     "轻食店",
@@ -30,6 +27,8 @@ class _HomePageState extends State<HomePage> {
     "其他",
   ];
 
+  List<Map<String, dynamic>> brands = [];
+
   @override
   void initState() {
     super.initState();
@@ -37,29 +36,35 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> loadBrands() async {
-    brands = await DatabaseHelper.instance.getBrands(
+    final data = await DatabaseHelper.instance.getBrands(
       categories[categoryIndex],
     );
-    setState(() {});
+
+    setState(() {
+      brands = data;
+    });
+  }
+
+  Future<void> deleteBrand(int id) async {
+    await DatabaseHelper.instance.deleteBrand(id);
+    loadBrands();
   }
 
   @override
   Widget build(BuildContext context) {
     final keyword = searchController.text.trim();
 
-    final result = brands.where((b) {
-      return b["name"].toString().contains(keyword);
+    final result = brands.where((e) {
+      return e["name"].toString().contains(keyword);
     }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F7),
-
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 8),
 
-            /// 搜索栏
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -85,9 +90,8 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Row(
                 children: [
-                  /// 左侧分类
                   Container(
-                    width: 98,
+                    width: 96,
                     margin: const EdgeInsets.only(left: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -100,7 +104,10 @@ class _HomePageState extends State<HomePage> {
 
                         return GestureDetector(
                           onTap: () async {
-                            categoryIndex = i;
+                            setState(() {
+                              categoryIndex = i;
+                            });
+
                             await loadBrands();
                           },
                           child: AnimatedContainer(
@@ -120,8 +127,8 @@ class _HomePageState extends State<HomePage> {
                                   color: selected
                                       ? Colors.white
                                       : Colors.black87,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 13,
                                 ),
                               ),
                             ),
@@ -133,7 +140,6 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(width: 10),
 
-                  /// 右侧品牌
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.only(right: 12),
@@ -158,74 +164,102 @@ class _HomePageState extends State<HomePage> {
                                 Text(
                                   "${result.length} 个",
                                   style: const TextStyle(color: Colors.grey),
-                                )
+                                ),
                               ],
                             ),
                           ),
 
                           Expanded(
-                            child: ListView.builder(
+                            child: result.isEmpty
+                                ? const Center(
+                              child: Text(
+                                "暂无品牌\n点击下方 + 添加",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  height: 1.6,
+                                ),
+                              ),
+                            )
+                                : ListView.builder(
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               itemCount: result.length,
                               itemBuilder: (_, i) {
                                 final brand = result[i];
 
-                                return GestureDetector(
-                                  onTap: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => BrandPage(
-                                          brandId: brand["id"],
-                                          brandName: brand["name"],
-                                        ),
-                                      ),
-                                    );
-
-                                    loadBrands();
-                                  },
-                                  child: Container(
+                                return Dismissible(
+                                  key: ValueKey(brand["id"]),
+                                  direction: DismissDirection.endToStart,
+                                  background: Container(
                                     margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(14),
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.only(right: 24),
                                     decoration: BoxDecoration(
+                                      color: Colors.red,
                                       borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                        color: Colors.grey.shade200,
-                                      ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 23,
-                                          backgroundColor: Colors.grey.shade100,
-                                          child: const Icon(
-                                            Icons.storefront_outlined,
-                                            color: Colors.black87,
+                                    child: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onDismissed: (_) =>
+                                      deleteBrand(brand["id"]),
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BrandPage(
+                                            brandId: brand["id"],
+                                            brandName: brand["name"],
                                           ),
                                         ),
-                                        const SizedBox(width: 14),
+                                      );
 
-                                        Expanded(
-                                          child: Text(
-                                            brand["name"],
-                                            style: const TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w600,
+                                      loadBrands();
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: Colors.grey.shade200,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 22,
+                                            backgroundColor: Colors.grey.shade100,
+                                            child: const Icon(
+                                              Icons.storefront_outlined,
+                                              color: Colors.black87,
                                             ),
                                           ),
-                                        ),
-
-                                        const Icon(
-                                          Icons.chevron_right_rounded,
-                                          color: Colors.grey,
-                                        )
-                                      ],
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Text(
+                                              brand["name"],
+                                              style: const TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.chevron_right_rounded,
+                                            color: Colors.grey,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );
                               },
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -234,9 +268,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            /// 底部导航
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: BottomNav(
                 index: navIndex,
                 onTap: (i) async {
@@ -246,7 +279,9 @@ class _HomePageState extends State<HomePage> {
                     final ok = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const AddFoodPage(),
+                        builder: (_) => AddFoodPage(
+                          category: categories[categoryIndex],
+                        ),
                       ),
                     );
 
@@ -260,7 +295,7 @@ class _HomePageState extends State<HomePage> {
                   if (i == 2) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("🎲 吃什么转盘正在开发中"),
+                        content: Text("吃什么转盘开发中"),
                         duration: Duration(seconds: 1),
                       ),
                     );
