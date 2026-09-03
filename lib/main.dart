@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'database/database_helper.dart';
 
 void main() {
   runApp(const CalPalApp());
 }
 
 class Food {
+  int? id;
   String name;
   String brand;
   String category;
   int kcal;
 
   Food({
+    this.id,
     required this.name,
     required this.brand,
     required this.category,
@@ -51,13 +54,33 @@ class _HomePageState extends State<HomePage> {
 
   String category = "饮料";
 
-  final List<Food> foods = [
-    Food(name: "瑞幸 生椰拿铁", brand: "瑞幸", category: "饮料", kcal: 247),
-    Food(name: "瑞幸 冰美式", brand: "瑞幸", category: "饮料", kcal: 8),
-    Food(name: "袁记 鲜肉云吞(10个)", brand: "袁记", category: "主食", kcal: 328),
-    Food(name: "赛百味 香烤鸡胸6寸", brand: "赛百味", category: "主食", kcal: 320),
-    Food(name: "水煮鸡蛋", brand: "自制", category: "蛋类", kcal: 78),
-  ];
+  final List<Food> foods = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadFoods();
+  }
+
+  Future<void> loadFoods() async {
+    final data = await DatabaseHelper.instance.getFoods();
+
+    setState(() {
+      foods.clear();
+
+      for (final item in data) {
+        foods.add(
+          Food(
+            id: item['id'],
+            name: item['name'],
+            brand: item['brand'],
+            category: item['category'],
+            kcal: item['calories'],
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,27 +209,30 @@ class _HomePageState extends State<HomePage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   if (nameController.text.isEmpty ||
-                      kcalController.text.isEmpty) return;
+                      kcalController.text.isEmpty) {
+                    return;
+                  }
 
-                  setState(() {
-                    foods.insert(
-                      0,
-                      Food(
-                        name: nameController.text,
-                        brand: brandController.text.isEmpty
-                            ? "自定义"
-                            : brandController.text,
-                        category: category,
-                        kcal: int.parse(kcalController.text),
-                      ),
-                    );
+                  final name = nameController.text;
+                  final brand = brandController.text.isEmpty
+                      ? "自定义"
+                      : brandController.text;
+                  final kcal = int.parse(kcalController.text);
 
-                    nameController.clear();
-                    brandController.clear();
-                    kcalController.clear();
-                  });
+                  await DatabaseHelper.instance.addFood(
+                    name: name,
+                    brand: brand,
+                    category: category,
+                    calories: kcal,
+                  );
+
+                  await loadFoods();
+
+                  nameController.clear();
+                  brandController.clear();
+                  kcalController.clear();
                 },
                 child: const Text("保存到热量库"),
               ),
