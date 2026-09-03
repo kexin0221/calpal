@@ -36,6 +36,14 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+    outputs.all {
+        val versionName = "2.4.0" // Replace with your desired version name
+        (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+            .outputFileName = "CalPal_v${versionName}.apk"
+    }
+}
 }
 
 kotlin {
