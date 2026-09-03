@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../database/database_helper.dart';
-import '../models/food.dart';
 import '../widgets/bottom_nav.dart';
-import 'brand_page.dart';
 import 'add_food_page.dart';
+import 'brand_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,52 +13,53 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final search = TextEditingController();
+  final searchController = TextEditingController();
 
   int categoryIndex = 0;
   int navIndex = 0;
 
-  List<Food> foods = [];
+  List<Map<String, dynamic>> brands = [];
 
-  final categories = [
+  final List<String> categories = [
     "奶茶店",
     "轻食店",
     "甜品店",
     "快餐店",
     "咖啡店",
     "小吃店",
-    "其他"
+    "其他",
   ];
 
   @override
   void initState() {
     super.initState();
-    loadFoods();
+    loadBrands();
   }
 
-  Future<void> loadFoods() async {
-    final data = await DatabaseHelper.instance.getFoods();
-    foods = data.map((e) => Food.fromMap(e)).toList();
+  Future<void> loadBrands() async {
+    brands = await DatabaseHelper.instance.getBrands(
+      categories[categoryIndex],
+    );
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final current = categories[categoryIndex];
+    final keyword = searchController.text.trim();
 
-    final brands = foods
-        .where((e) => e.category == current)
-        .map((e) => e.brand)
-        .toSet()
-        .where((b) => b.contains(search.text))
-        .toList();
+    final result = brands.where((b) {
+      return b["name"].toString().contains(keyword);
+    }).toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xffF5F5F7),
+
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 8),
 
+            /// 搜索栏
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -68,7 +69,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
-                  controller: search,
+                  controller: searchController,
                   onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     hintText: "搜索品牌...",
@@ -84,8 +85,9 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Row(
                 children: [
+                  /// 左侧分类
                   Container(
-                    width: 100,
+                    width: 98,
                     margin: const EdgeInsets.only(left: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -97,22 +99,27 @@ class _HomePageState extends State<HomePage> {
                         final selected = i == categoryIndex;
 
                         return GestureDetector(
-                          onTap: () {
-                            setState(() => categoryIndex = i);
+                          onTap: () async {
+                            categoryIndex = i;
+                            await loadBrands();
                           },
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
+                            duration: const Duration(milliseconds: 180),
                             margin: const EdgeInsets.all(6),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
-                              color: selected ? Colors.black : Colors.transparent,
+                              color: selected
+                                  ? Colors.black
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Center(
                               child: Text(
                                 categories[i],
                                 style: TextStyle(
-                                  color: selected ? Colors.white : Colors.black,
+                                  color: selected
+                                      ? Colors.white
+                                      : Colors.black87,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
@@ -124,86 +131,145 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
+                  const SizedBox(width: 10),
+
+                  /// 右侧品牌
                   Expanded(
                     child: Container(
-                      margin: const EdgeInsets.fromLTRB(10, 0, 12, 0),
+                      margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(22),
                       ),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(14),
-                        itemCount: brands.length,
-                        itemBuilder: (_, i) {
-                          final brand = brands[i];
-
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => BrandPage(brand: brand),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: Colors.grey.shade100,
-                                    child: const Icon(Icons.store),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                            child: Row(
+                              children: [
+                                const Text(
+                                  "品牌",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Text(
-                                      brand,
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
+                                ),
+                                const Spacer(),
+                                Text(
+                                  "${result.length} 个",
+                                  style: const TextStyle(color: Colors.grey),
+                                )
+                              ],
+                            ),
+                          ),
+
+                          Expanded(
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              itemCount: result.length,
+                              itemBuilder: (_, i) {
+                                final brand = result[i];
+
+                                return GestureDetector(
+                                  onTap: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BrandPage(
+                                          brandId: brand["id"],
+                                          brandName: brand["name"],
+                                        ),
+                                      ),
+                                    );
+
+                                    loadBrands();
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
                                       ),
                                     ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 23,
+                                          backgroundColor: Colors.grey.shade100,
+                                          child: const Icon(
+                                            Icons.storefront_outlined,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 14),
+
+                                        Expanded(
+                                          child: Text(
+                                            brand["name"],
+                                            style: const TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+
+                                        const Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: Colors.grey,
+                                        )
+                                      ],
+                                    ),
                                   ),
-                                  const Icon(Icons.chevron_right),
-                                ],
-                              ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                          )
+                        ],
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
 
+            /// 底部导航
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
               child: BottomNav(
                 index: navIndex,
                 onTap: (i) async {
                   setState(() => navIndex = i);
 
                   if (i == 1) {
-                    final result = await Navigator.push(
+                    final ok = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const AddFoodPage(),
                       ),
                     );
 
-                    if (result == true) loadFoods();
+                    if (ok == true) {
+                      loadBrands();
+                    }
+
+                    setState(() => navIndex = 0);
+                  }
+
+                  if (i == 2) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("🎲 吃什么转盘正在开发中"),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+
+                    setState(() => navIndex = 0);
                   }
                 },
               ),
-            )
+            ),
           ],
         ),
       ),

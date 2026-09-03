@@ -2,27 +2,20 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
-  // 单例：整个 App 只使用一个 DatabaseHelper
   static final DatabaseHelper instance = DatabaseHelper._init();
-
   static Database? _database;
 
   DatabaseHelper._init();
 
-  // 获取数据库
   Future<Database> get database async {
-    if (_database != null) {
-      return _database!;
-    }
-
+    if (_database != null) return _database!;
     _database = await _initDB('calpal.db');
     return _database!;
   }
 
-  // 初始化数据库
-  Future<Database> _initDB(String filePath) async {
+  Future<Database> _initDB(String file) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+    final path = join(dbPath, file);
 
     return await openDatabase(
       path,
@@ -32,87 +25,129 @@ class DatabaseHelper {
     );
   }
 
-  // 第一次创建数据库
-  Future<void> _createDB(
-  Database db,
-  int version,
-  ) async {
-  await db.execute('''
-        CREATE TABLE foods (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          brand TEXT NOT NULL,
-          category TEXT NOT NULL,
-          calories INTEGER NOT NULL,
-          created_at TEXT NOT NULL
-        )
-      ''');
+  Future<void> _createDB(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE brands(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        name TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE foods(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        brandId INTEGER,
+        name TEXT NOT NULL,
+        calories INTEGER NOT NULL,
+        FOREIGN KEY (brandId) REFERENCES brands(id)
+      )
+    ''');
   }
 
-  // 数据库版本升级
-  Future<void> _upgradeDB(
-    Database db,
-    int oldVersion,
-    int newVersion,
-  ) async {
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE foods ADD COLUMN brand TEXT NOT NULL DEFAULT "自定义"',
-      );
+      await db.execute('''
+        CREATE TABLE brands(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category TEXT NOT NULL,
+          name TEXT NOT NULL
+        )
+      ''');
 
-      await db.execute(
-        'ALTER TABLE foods ADD COLUMN category TEXT NOT NULL DEFAULT "其他"',
-      );
+      // 把旧 foods 迁移到新结构（如果有数据）
+      final oldFoods = await db.query('foods');
+
+      final Map<String, int> brandMap = {};
+
+      for (var food in oldFoods) {
+        final brand = food['brand'] as String;
+        final category = food['category'] as String;
+
+        if (!brandMap.containsKey(brand)) {
+          final id = await db.insert('brands', {
+            'name': brand,
+            'category': category,
+          });
+          brandMap[brand] = id;
+        }
+      }
+
+      await db.execute('ALTER TABLE foods RENAME TO foods_old');
+
+      await db.execute('''
+        CREATE TABLE foods(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          brandId INTEGER,
+          name TEXT NOT NULL,
+          calories INTEGER NOT NULL,
+          FOREIGN KEY (brandId) REFERENCES brands(id)
+        )
+      ''');
+
+      for (var food in oldFoods) {
+        await db.insert('foods', {
+          'brandId': brandMap[food['brand']],
+          'name': food['name'],
+          'calories': food['calories'],
+        });
+      }
+
+      await db.execute('DROP TABLE foods_old');
     }
   }
 
-  // 添加食物
-  Future<int> addFood({
-    required String name,
-    required String brand,
+  Future<List<Map<String, dynamic>>> getBrands(String category) async {
+    final db = await database;
+    return db.query(
+      'brands',
+      where: 'category=?',
+      whereArgs: [category],
+      orderBy: 'name',
+    );
+  }
+
+  Future<int> addBrand({
     required String category,
+    required String name,
+  }) async {
+    final db = await database;
+    return db.insert('brands', {
+      'category': category,
+      'name': name,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getFoods(int brandId) async {
+    final db = await database;
+    return db.query(
+      'foods',
+      where: 'brandId=?',
+      whereArgs: [brandId],
+      orderBy: 'calories ASC',
+    );
+  }
+
+  Future<int> addFood({
+    required int brandId,
+    required String name,
     required int calories,
   }) async {
     final db = await database;
-
-    return await db.insert(
-      'foods',
-      {
-        'name': name,
-        'brand': brand,
-        'category': category,
-        'calories': calories,
-        'created_at': DateTime.now().toIso8601String(),
-      },
-    );
+    return db.insert('foods', {
+      'brandId': brandId,
+      'name': name,
+      'calories': calories,
+    });
   }
 
-  // 获取所有食物
-  Future<List<Map<String, dynamic>>> getFoods() async {
-    final db = await database;
-
-    return await db.query(
-      'foods',
-      orderBy: 'id DESC',
-    );
-  }
-
-  // 删除食物
   Future<int> deleteFood(int id) async {
     final db = await database;
 
-    return await db.delete(
+    return db.delete(
       'foods',
-      where: 'id = ?',
+      where: 'id=?',
       whereArgs: [id],
     );
   }
-
-  // 关闭数据库
-  Future<void> close() async {
-    final db = await database;
-    await db.close();
-    _database = null;
-  }
 }
-

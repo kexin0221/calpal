@@ -53,7 +53,7 @@ class BottomNav extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => onTap(1),
-                child: item(Icons.add_circle_outline, "添加食物", index == 1),
+                child: item(Icons.add_circle_outline, "添加品牌", index == 1),
               ),
               GestureDetector(
                 onTap: () => onTap(2),
