@@ -2,60 +2,141 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 
 class AddBrandPage extends StatefulWidget {
-  const AddBrandPage({super.key});
+  final String category;
+
+  const AddBrandPage({
+    super.key,
+    required this.category,
+  });
 
   @override
   State<AddBrandPage> createState() => _AddBrandPageState();
 }
 
 class _AddBrandPageState extends State<AddBrandPage> {
-  final name = TextEditingController();
-  String category = "奶茶店";
+  final TextEditingController nameController = TextEditingController();
 
-  Future<void> save() async {
-    if (name.text.isEmpty) return;
+  Future<void> saveBrand() async {
+    final name = nameController.text.trim();
+
+    if (name.isEmpty) return;
 
     await DatabaseHelper.instance.addBrand(
-      category: category,
-      name: name.text,
+      category: widget.category,
+      name: name,
     );
 
-    if (mounted) Navigator.pop(context, true);
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("添加品牌")),
+      backgroundColor: const Color(0xffF5F5F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xffF5F5F5),
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          "添加品牌",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              "品牌名称",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: "品牌名称"),
+              controller: nameController,
+              decoration: InputDecoration(
+                hintText: "",
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField(
-              value: category,
-              items: const [
-                DropdownMenuItem(value: "奶茶店", child: Text("奶茶店")),
-                DropdownMenuItem(value: "轻食店", child: Text("轻食店")),
-                DropdownMenuItem(value: "甜品店", child: Text("甜品店")),
-                DropdownMenuItem(value: "快餐店", child: Text("快餐店")),
-                DropdownMenuItem(value: "咖啡店", child: Text("咖啡店")),
-                DropdownMenuItem(value: "小吃店", child: Text("小吃店")),
-              ],
-              onChanged: (v) => category = v!,
+
+            const SizedBox(height: 24),
+
+            const Text(
+              "当前分类",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+
+            const SizedBox(height: 10),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 16,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                widget.category,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+
             const Spacer(),
+
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
-                onPressed: save,
-                child: const Text("保存品牌"),
+              height: 56,
+              child: ElevatedButton(
+                onPressed: saveBrand,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: const Text(
+                  "保存品牌",
+                  style: TextStyle(fontSize: 17),
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+
 import '../database/database_helper.dart';
 import '../services/csv_service.dart';
+import 'add_food_page.dart';
 
 class BrandPage extends StatefulWidget {
   final int brandId;
   final String brandName;
+  final String category;
 
   const BrandPage({
     super.key,
     required this.brandId,
     required this.brandName,
+    required this.category,
   });
 
   @override
@@ -17,9 +21,12 @@ class BrandPage extends StatefulWidget {
 }
 
 class _BrandPageState extends State<BrandPage> {
-  final searchController = TextEditingController();
-
   List<Map<String, dynamic>> foods = [];
+  List<Map<String, dynamic>> displayFoods = [];
+
+  bool sortAscending = true;
+  Set<String> selectedFilters = {};
+  String searchText = "";
 
   @override
   void initState() {
@@ -29,405 +36,483 @@ class _BrandPageState extends State<BrandPage> {
 
   Future<void> loadFoods() async {
     foods = await DatabaseHelper.instance.getFoods(widget.brandId);
+    applyFilterAndSort();
+  }
+
+  //==========================
+  // 热量颜色
+  //==========================
+  Color calorieColor(int calories) {
+    if (calories < 300) {
+      return const Color(0xFF22C55E);
+    } else if (calories < 400) {
+      return const Color(0xFFF59E0B);
+    } else {
+      return const Color(0xFFEF4444);
+    }
+  }
+
+  //==========================
+  // 排序 + 筛选 + 搜索
+  //==========================
+  void applyFilterAndSort() {
+    displayFoods = List<Map<String, dynamic>>.from(foods);
+
+    // 搜索
+    if (searchText.isNotEmpty) {
+      displayFoods = displayFoods.where((food) {
+        return food["name"]
+            .toString()
+            .toLowerCase()
+            .contains(searchText.toLowerCase());
+      }).toList();
+    }
+
+    // 筛选
+    if (selectedFilters.isNotEmpty) {
+      displayFoods = displayFoods.where((food) {
+        final c = food["calories"] as int;
+
+        if (selectedFilters.contains("0-300") && c < 300) return true;
+        if (selectedFilters.contains("300-400") &&
+            c >= 300 &&
+            c < 400) return true;
+        if (selectedFilters.contains("400-500") &&
+            c >= 400 &&
+            c < 500) return true;
+        if (selectedFilters.contains("500+") && c >= 500) return true;
+
+        return false;
+      }).toList();
+    }
+
+    // 排序
+    displayFoods.sort((a, b) {
+      final result = a["calories"].compareTo(b["calories"]);
+      return sortAscending ? result : -result;
+    });
+
     setState(() {});
   }
 
-  Color calorieColor(int calories) {
-    if (calories < 300) {
-      return const Color(0xFF22C55E); // 绿色
-    } else if (calories < 400) {
-      return const Color(0xFFF59E0B); // 黄色
-    } else {
-      return const Color(0xFFEF4444); // 红色
-    }
-  }
-
-  Future<void> deleteFood(int id) async {
-    await DatabaseHelper.instance.deleteFood(id);
-    loadFoods();
-  }
-
-  // 添加产品
+  //==========================
+  // 新增产品
+  //==========================
   Future<void> addFood() async {
-    final nameController = TextEditingController();
-    final kcalController = TextEditingController();
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xffF5F5F7),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddFoodPage(
+          brandId: widget.brandId,
+          category: widget.category,
+        ),
       ),
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            22,
-            20,
-            22,
-            MediaQuery.of(sheetContext).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                "添加产品",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 22),
-
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  hintText: "产品名称",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              TextField(
-                controller: kcalController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: "热量（kcal）",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  onPressed: () async {
-                    final name = nameController.text.trim();
-                    final kcal = int.tryParse(kcalController.text.trim());
-
-                    if (name.isEmpty || kcal == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("请填写正确的产品名称和热量")),
-                      );
-                      return;
-                    }
-
-                    try {
-                      await DatabaseHelper.instance.addFood(
-                        brandId: widget.brandId,
-                        name: name,
-                        calories: kcal,
-                      );
-
-                      Navigator.pop(sheetContext, true);
-                    } catch (e) {
-                      debugPrint(e.toString());
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("保存失败：$e")),
-                      );
-                    }
-                  },
-                  child: const Text("保存产品"),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
 
     if (result == true) {
-      await loadFoods();
+      loadFoods();
     }
   }
 
-  Future<void> importCsv() async {
-    final foods = await CsvService.pickCsv();
+  //==========================
+  // 编辑产品
+  //==========================
+  Future<void> editFood(Map<String, dynamic> food) async {
+    final nameController = TextEditingController(text: food["name"]);
+    final calorieController =
+    TextEditingController(text: food["calories"].toString());
 
-    if (foods == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("编辑产品"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "产品名称"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: calorieController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "热量"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("保存"),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) return;
+
+    await DatabaseHelper.instance.updateFood(
+      id: food["id"],
+      name: nameController.text.trim(),
+      calories: int.tryParse(calorieController.text) ?? 0,
+    );
+
+    loadFoods();
+  }
+
+  //==========================
+  // 删除产品
+  //==========================
+  Future<void> deleteFood(Map<String, dynamic> food) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("删除产品"),
+        content: Text("确定删除「${food["name"]}」吗？"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("删除"),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) return;
+
+    await DatabaseHelper.instance.deleteFood(food["id"]);
+    loadFoods();
+  }
+
+  //==========================
+  // CSV 导入
+  //==========================
+  Future<void> importCsv() async {
+    final list = await CsvService.pickCsv();
+
+    if (list == null) return;
 
     await DatabaseHelper.instance.addFoodsBatch(
       brandId: widget.brandId,
-      foods: foods,
+      foods: list,
     );
 
     await loadFoods();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("成功导入 ${foods.length} 个产品"),
-        ),
+        SnackBar(content: Text("成功导入 ${list.length} 个产品")),
       );
     }
   }
 
-  // 编辑产品（长按）
-  Future<void> editFood(Map<String, dynamic> food) async {
-    final name = TextEditingController(text: food["name"]);
-    final kcal = TextEditingController(text: food["calories"].toString());
+  //==========================
+  // 筛选弹窗
+  //==========================
+  Future<void> showFilterSheet() async {
+    Set<String> temp = Set.from(selectedFilters);
 
-    final ok = await showModalBottomSheet<bool>(
+    await showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xffF5F5F7),
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            22,
-            20,
-            22,
-            MediaQuery.of(context).viewInsets.bottom + 22,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                "编辑产品",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 22),
-              TextField(
-                controller: name,
-                decoration: _input("产品名称"),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: kcal,
-                keyboardType: TextInputType.number,
-                decoration: _input("热量 (kcal)"),
-              ),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  onPressed: () async {
-                    await DatabaseHelper.instance.updateFood(
-                      id: food["id"],
-                      name: name.text.trim(),
-                      calories: int.parse(kcal.text),
-                    );
+        return StatefulBuilder(
+          builder: (context, setSheet) {
+            Widget item(String label) {
+              final checked = temp.contains(label);
 
-                    Navigator.pop(context, true);
-                  },
-                  child: const Text("保存修改"),
+              return CheckboxListTile(
+                value: checked,
+                activeColor: Colors.black,
+                title: Text(label),
+                controlAffinity: ListTileControlAffinity.leading,
+                onChanged: (_) {
+                  setSheet(() {
+                    checked ? temp.remove(label) : temp.add(label);
+                  });
+                },
+              );
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "热量筛选",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    item("0-300"),
+                    item("300-400"),
+                    item("400-500"),
+                    item("500+"),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              temp.clear();
+                              setSheet(() {});
+                            },
+                            child: const Text("清空"),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.black,
+                            ),
+                            onPressed: () {
+                              selectedFilters = temp;
+                              Navigator.pop(context);
+                              applyFilterAndSort();
+                            },
+                            child: const Text("完成"),
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  //==========================
+  // UI
+  //==========================
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F7),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F5F7),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          widget.brandName,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              sortAscending
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
+              color: Colors.black,
+            ),
+            onPressed: () {
+              sortAscending = !sortAscending;
+              applyFilterAndSort();
+            },
+          ),
+          IconButton(
+            icon: Stack(
+              children: [
+                const Icon(Icons.filter_list_rounded, color: Colors.black),
+                if (selectedFilters.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  )
+              ],
+            ),
+            onPressed: showFilterSheet,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.black),
+            onPressed: addFood,
+          ),
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              if (v == "csv") importCsv();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: "csv",
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart_outlined),
+                    SizedBox(width: 8),
+                    Text("导入 CSV"),
+                  ],
                 ),
               )
             ],
           ),
-        );
-      },
-    );
-
-    if (ok == true) loadFoods();
-  }
-
-  InputDecoration _input(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide.none,
+        ],
       ),
-    );
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final keyword = searchController.text.trim();
-
-    final result = foods.where((e) {
-      return e["name"].toString().contains(keyword);
-    }).toList();
-
-    return Scaffold(
-      backgroundColor: const Color(0xffF5F5F7),
-      appBar: AppBar(
-        backgroundColor: const Color(0xffF5F5F7),
-        centerTitle: true,
-        title: Text(
-          widget.brandName,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-          actions: [
-            IconButton(
-              onPressed: addFood,
-              icon: const Icon(Icons.add),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == "csv") {
-                  importCsv();
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: "csv",
-                  child: Row(
-                    children: [
-                      Icon(Icons.table_chart_outlined),
-                      SizedBox(width: 8),
-                      Text("导入 CSV"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ]
-      ),
       body: Column(
         children: [
+          //==========================
+          // 搜索框（无提示文本）
+          //==========================
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             child: Container(
-              height: 48,
+              height: 46,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(23),
               ),
               child: TextField(
-                controller: searchController,
-                onChanged: (_) => setState(() {}),
+                onChanged: (v) {
+                  searchText = v;
+                  applyFilterAndSort();
+                },
                 decoration: const InputDecoration(
-                  hintText: "搜索产品...",
                   prefixIcon: Icon(Icons.search),
                   border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
           ),
 
+          //==========================
+          // 产品列表
+          //==========================
           Expanded(
-            child: result.isEmpty
+            child: displayFoods.isEmpty
                 ? const Center(
               child: Text(
-                "暂无产品\n点击右上角 + 添加",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                  height: 1.6,
-                ),
+                "暂无产品",
+                style: TextStyle(color: Colors.grey),
               ),
             )
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: result.length,
-              itemBuilder: (_, i) {
-                final food = result[i];
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              itemCount: displayFoods.length,
+              itemBuilder: (context, index) {
+                final food = displayFoods[index];
 
-                return Dismissible(
-                  key: ValueKey(food["id"]),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.delete_outline,
-                      color: Colors.white,
-                    ),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
                   ),
-                  onDismissed: (_) => deleteFood(food["id"]),
-                  child: GestureDetector(
-                    onLongPress: () => editFood(food),
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          food["name"],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
+
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Expanded(
-                            child: Text(
-                              food["name"],
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w500,
-                              ),
+                          Text(
+                            "${food["calories"]}",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: calorieColor(food["calories"]),
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                "${food["calories"]}",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: calorieColor(food["calories"]),
-                                ),
-                              ),
-                              const Text(
-                                "kcal",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF9CA3AF),
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            "kcal",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
-                    ),
+
+                      const SizedBox(width: 8),
+
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, size: 20),
+                        onSelected: (value) {
+                          if (value == "edit") {
+                            editFood(food);
+                          } else {
+                            deleteFood(food);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: "edit",
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined),
+                                SizedBox(width: 8),
+                                Text("编辑"),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: "delete",
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "删除",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 );
               },

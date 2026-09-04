@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 
 class AddFoodPage extends StatefulWidget {
+  final int brandId;
   final String category;
 
   const AddFoodPage({
     super.key,
+    required this.brandId,
     required this.category,
   });
 
@@ -15,13 +17,18 @@ class AddFoodPage extends StatefulWidget {
 
 class _AddFoodPageState extends State<AddFoodPage> {
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController calorieController = TextEditingController();
 
-  Future<void> saveBrand() async {
-    if (nameController.text.trim().isEmpty) return;
+  Future<void> saveFood() async {
+    final name = nameController.text.trim();
+    final calories = int.tryParse(calorieController.text);
 
-    await DatabaseHelper.instance.addBrand(
-      category: widget.category,
-      name: nameController.text.trim(),
+    if (name.isEmpty || calories == null) return;
+
+    await DatabaseHelper.instance.addFood(
+      brandId: widget.brandId,
+      name: name,
+      calories: calories,
     );
 
     if (mounted) {
@@ -32,106 +39,88 @@ class _AddFoodPageState extends State<AddFoodPage> {
   @override
   void dispose() {
     nameController.dispose();
+    calorieController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F7),
+      backgroundColor: const Color(0xFFF5F5F7),
       appBar: AppBar(
-        backgroundColor: const Color(0xffF5F5F7),
+        backgroundColor: const Color(0xFFF5F5F7),
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          "添加品牌",
+          "添加产品",
           style: TextStyle(
-            fontWeight: FontWeight.w600,
             color: Colors.black,
+            fontWeight: FontWeight.w700,
           ),
         ),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "品牌名称",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              "产品名称",
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 10),
-
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  hintText: "例如：瑞幸咖啡",
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                hintText: "",
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
-
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 20),
             const Text(
-              "当前分类",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
+              "热量（kcal）",
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 10),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 16,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                widget.category,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+            const SizedBox(height: 8),
+            TextField(
+              controller: calorieController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "",
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
-
             const Spacer(),
-
             SizedBox(
               width: double.infinity,
               height: 54,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
+              child: ElevatedButton(
+                onPressed: saveFood,
+                style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(27),
                   ),
                 ),
-                onPressed: saveBrand,
                 child: const Text(
-                  "保存品牌",
+                  "保存产品",
                   style: TextStyle(fontSize: 16),
                 ),
               ),
-            ),
+            )
           ],
         ),
       ),
