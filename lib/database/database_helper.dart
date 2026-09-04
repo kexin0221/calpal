@@ -19,14 +19,41 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
   }
 
-  /// 第一次安装
   Future<void> _createDB(Database db, int version) async {
+    await db.execute("""
+      CREATE TABLE categories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        sortOrder INTEGER NOT NULL
+      )
+    """);
+
+    final defaults = [
+      "奶茶",
+      "果茶",
+      "咖啡",
+      "甜品",
+      "糖水",
+      "轻食",
+      "烘焙",
+      "三明治",
+      "西式快餐",
+      "中式快餐"
+    ];
+
+    for (int i = 0; i < defaults.length; i++) {
+      await db.insert("categories", {
+        "name": defaults[i],
+        "sortOrder": i,
+      });
+    }
+
     await db.execute("""
       CREATE TABLE brands(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,79 +72,101 @@ class DatabaseHelper {
     """);
   }
 
-  /// 老版本自动升级
   Future<void> _upgradeDB(
       Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
+    if (oldVersion < 3) {
       await db.execute("""
-        CREATE TABLE IF NOT EXISTS brands(
+        CREATE TABLE IF NOT EXISTS categories(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          category TEXT NOT NULL,
-          name TEXT NOT NULL
+          name TEXT NOT NULL,
+          sortOrder INTEGER NOT NULL
         )
       """);
 
-      // 如果旧 foods 表是 brand/category 结构，则迁移
-      try {
-        final oldFoods = await db.query("foods");
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery("SELECT COUNT(*) FROM categories"),
+      );
 
-        final Set<String> columns = oldFoods.isNotEmpty
-            ? oldFoods.first.keys.toSet()
-            : <String>{};
+      if (count == 0) {
+        final defaults = [
+          "奶茶",
+          "果茶",
+          "咖啡",
+          "甜品",
+          "糖水",
+          "轻食",
+          "烘焙",
+          "三明治",
+          "西式快餐",
+          "中式快餐"
+        ];
 
-        if (columns.contains("brand")) {
-          final Map<String, int> brandMap = {};
-
-          for (final item in oldFoods) {
-            final brand = item["brand"] as String;
-            final category = item["category"] as String;
-
-            if (!brandMap.containsKey(brand)) {
-              final id = await db.insert("brands", {
-                "category": category,
-                "name": brand,
-              });
-              brandMap[brand] = id;
-            }
-          }
-
-          await db.execute("ALTER TABLE foods RENAME TO foods_old");
-
-          await db.execute("""
-            CREATE TABLE foods(
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              brandId INTEGER NOT NULL,
-              name TEXT NOT NULL,
-              calories INTEGER NOT NULL
-            )
-          """);
-
-          for (final item in oldFoods) {
-            await db.insert("foods", {
-              "brandId": brandMap[item["brand"]],
-              "name": item["name"],
-              "calories": item["calories"],
-            });
-          }
-
-          await db.execute("DROP TABLE foods_old");
+        for (int i = 0; i < defaults.length; i++) {
+          await db.insert("categories", {
+            "name": defaults[i],
+            "sortOrder": i,
+          });
         }
-      } catch (_) {
-        // 已是新结构，无需迁移
       }
     }
   }
 
-  //==================== 品牌 ====================//
+  //================ 分类 =================//
+
+  Future<List<Map<String, dynamic>>> getCategories() async {
+    final db = await database;
+
+    return db.query(
+      "categories",
+      orderBy: "sortOrder ASC",
+    );
+  }
+
+  Future<void> addCategory(String name) async {
+    final db = await database;
+
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery("SELECT COUNT(*) FROM categories"),
+    ) ??
+        0;
+
+    await db.insert("categories", {
+      "name": name,
+      "sortOrder": count,
+    });
+  }
+
+  Future<void> updateCategory(int id, String name) async {
+    final db = await database;
+
+    await db.update(
+      "categories",
+      {"name": name},
+      where: "id=?",
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deleteCategory(int id) async {
+    final db = await database;
+
+    await db.delete(
+      "categories",
+      where: "id=?",
+      whereArgs: [id],
+    );
+  }
+
+  //================ 品牌 =================//
 
   Future<List<Map<String, dynamic>>> getBrands(String category) async {
     final db = await database;
 
-    return await db.query(
+    return db.query(
       "brands",
       where: "category=?",
       whereArgs: [category],
-      orderBy: "name COLLATE NOCASE",
+      orderBy: "name",
     );
   }
 
@@ -127,7 +176,7 @@ class DatabaseHelper {
   }) async {
     final db = await database;
 
-    return await db.insert("brands", {
+    return db.insert("brands", {
       "category": category,
       "name": name,
     });
@@ -139,7 +188,7 @@ class DatabaseHelper {
   }) async {
     final db = await database;
 
-    return await db.update(
+    return db.update(
       "brands",
       {"name": name},
       where: "id=?",
@@ -156,19 +205,29 @@ class DatabaseHelper {
       whereArgs: [id],
     );
 
-    return await db.delete(
+    return db.delete(
       "brands",
       where: "id=?",
       whereArgs: [id],
     );
   }
 
-  //==================== 产品 ====================//
+  Future<List<Map<String, dynamic>>> getAllBrands() async {
+    final db = await database;
+    return db.query("brands");
+  }
+
+  Future<void> insertBrandRaw(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert("brands", data);
+  }
+
+  //================ 产品 =================//
 
   Future<List<Map<String, dynamic>>> getFoods(int brandId) async {
     final db = await database;
 
-    return await db.query(
+    return db.query(
       "foods",
       where: "brandId=?",
       whereArgs: [brandId],
@@ -183,7 +242,7 @@ class DatabaseHelper {
   }) async {
     final db = await database;
 
-    return await db.insert("foods", {
+    return db.insert("foods", {
       "brandId": brandId,
       "name": name,
       "calories": calories,
@@ -197,7 +256,7 @@ class DatabaseHelper {
   }) async {
     final db = await database;
 
-    return await db.update(
+    return db.update(
       "foods",
       {
         "name": name,
@@ -211,16 +270,11 @@ class DatabaseHelper {
   Future<int> deleteFood(int id) async {
     final db = await database;
 
-    return await db.delete(
+    return db.delete(
       "foods",
       where: "id=?",
       whereArgs: [id],
     );
-  }
-
-  Future<List<Map<String, dynamic>>> getAllBrands() async {
-    final db = await database;
-    return db.query("brands");
   }
 
   Future<List<Map<String, dynamic>>> getAllFoods() async {
@@ -228,20 +282,32 @@ class DatabaseHelper {
     return db.query("foods");
   }
 
+  Future<void> insertFoodRaw(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert("foods", data);
+  }
+
   Future<void> clearDatabase() async {
     final db = await database;
-
     await db.delete("foods");
     await db.delete("brands");
   }
 
-  Future<void> insertBrandRaw(Map<String, dynamic> data) async {
+  Future<void> updateCategoryOrder(
+      List<Map<String, dynamic>> list) async {
     final db = await database;
-    await db.insert("brands", data);
-  }
 
-  Future<void> insertFoodRaw(Map<String, dynamic> data) async {
-    final db = await database;
-    await db.insert("foods", data);
+    final batch = db.batch();
+
+    for (int i = 0; i < list.length; i++) {
+      batch.update(
+        "categories",
+        {"sortOrder": i},
+        where: "id=?",
+        whereArgs: [list[i]["id"]],
+      );
+    }
+
+    await batch.commit(noResult: true);
   }
 }
