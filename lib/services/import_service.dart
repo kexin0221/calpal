@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,19 +8,17 @@ class ImportService {
   static Future<void> importDatabase(File file) async {
     final json = jsonDecode(await file.readAsString());
 
-    final db = DatabaseHelper.instance;
+    await DatabaseHelper.instance.clearDatabase();
 
-    await db.clearDatabase();
-
-    for (final brand in json["brands"]) {
-      await db.insertBrandRaw(
-        Map<String, dynamic>.from(brand),
+    for (final item in json["brands"]) {
+      await DatabaseHelper.instance.insertBrandRaw(
+        Map<String, dynamic>.from(item),
       );
     }
 
-    for (final food in json["foods"]) {
-      await db.insertFoodRaw(
-        Map<String, dynamic>.from(food),
+    for (final item in json["foods"]) {
+      await DatabaseHelper.instance.insertFoodRaw(
+        Map<String, dynamic>.from(item),
       );
     }
   }

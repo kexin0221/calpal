@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,10 +8,8 @@ import '../database/database_helper.dart';
 
 class ExportService {
   static Future<File> exportDatabase() async {
-    final db = DatabaseHelper.instance;
-
-    final brands = await db.getAllBrands();
-    final foods = await db.getAllFoods();
+    final brands = await DatabaseHelper.instance.getAllBrands();
+    final foods = await DatabaseHelper.instance.getAllFoods();
 
     final data = {
       "version": 1,
