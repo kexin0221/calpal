@@ -217,4 +217,31 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
+
+  Future<List<Map<String, dynamic>>> getAllBrands() async {
+    final db = await database;
+    return db.query("brands");
+  }
+
+  Future<List<Map<String, dynamic>>> getAllFoods() async {
+    final db = await database;
+    return db.query("foods");
+  }
+
+  Future<void> clearDatabase() async {
+    final db = await database;
+
+    await db.delete("foods");
+    await db.delete("brands");
+  }
+
+  Future<void> insertBrandRaw(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert("brands", data);
+  }
+
+  Future<void> insertFoodRaw(Map<String, dynamic> data) async {
+    final db = await database;
+    await db.insert("foods", data);
+  }
 }
