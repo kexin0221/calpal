@@ -1,24 +1,37 @@
-import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 
 class CsvService {
-  static List<Map<String, dynamic>> parse(
-      String csv,
-      int brandId,
-      ) {
-    final lines = const LineSplitter().convert(csv);
+  static Future<List<Map<String, dynamic>>?> pickCsv() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ["csv"],
+    );
 
-    final result = <Map<String, dynamic>>[];
+    if (result == null) return null;
+
+    final file = File(result.files.single.path!);
+
+    final text = await file.readAsString();
+
+    final lines = text.split("\n");
+
+    final foods = <Map<String, dynamic>>[];
 
     for (int i = 1; i < lines.length; i++) {
-      final row = lines[i].split(",");
+      final row = lines[i].trim();
 
-      result.add({
-        "brandId": brandId,
-        "name": row[0],
-        "calories": int.parse(row[1]),
+      if (row.isEmpty) continue;
+
+      final item = row.split(",");
+
+      foods.add({
+        "name": item[0],
+        "calories": int.parse(item[1]),
       });
     }
 
-    return result;
+    return foods;
   }
 }

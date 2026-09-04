@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
+import '../services/csv_service.dart';
 
 class BrandPage extends StatefulWidget {
   final int brandId;
@@ -156,6 +157,27 @@ class _BrandPageState extends State<BrandPage> {
     }
   }
 
+  Future<void> importCsv() async {
+    final foods = await CsvService.pickCsv();
+
+    if (foods == null) return;
+
+    await DatabaseHelper.instance.addFoodsBatch(
+      brandId: widget.brandId,
+      foods: foods,
+    );
+
+    await loadFoods();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("成功导入 ${foods.length} 个产品"),
+        ),
+      );
+    }
+  }
+
   // 编辑产品（长按）
   Future<void> editFood(Map<String, dynamic> food) async {
     final name = TextEditingController(text: food["name"]);
@@ -267,12 +289,31 @@ class _BrandPageState extends State<BrandPage> {
           widget.brandName,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        actions: [
-          IconButton(
-            onPressed: addFood,
-            icon: const Icon(Icons.add),
-          )
-        ],
+          actions: [
+            IconButton(
+              onPressed: addFood,
+              icon: const Icon(Icons.add),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == "csv") {
+                  importCsv();
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: "csv",
+                  child: Row(
+                    children: [
+                      Icon(Icons.table_chart_outlined),
+                      SizedBox(width: 8),
+                      Text("导入 CSV"),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ]
       ),
       body: Column(
         children: [

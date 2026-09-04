@@ -310,4 +310,23 @@ class DatabaseHelper {
 
     await batch.commit(noResult: true);
   }
+
+  Future<void> addFoodsBatch({
+    required int brandId,
+    required List<Map<String, dynamic>> foods,
+  }) async {
+    final db = await database;
+
+    final batch = db.batch();
+
+    for (final food in foods) {
+      batch.insert("foods", {
+        "brandId": brandId,
+        "name": food["name"],
+        "calories": food["calories"],
+      });
+    }
+
+    await batch.commit(noResult: true);
+  }
 }
