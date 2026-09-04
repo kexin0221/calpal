@@ -32,6 +32,16 @@ class _BrandPageState extends State<BrandPage> {
     setState(() {});
   }
 
+  Color calorieColor(int calories) {
+    if (calories < 300) {
+      return const Color(0xFF22C55E); // 绿色
+    } else if (calories < 400) {
+      return const Color(0xFFF59E0B); // 黄色
+    } else {
+      return const Color(0xFFEF4444); // 红色
+    }
+  }
+
   Future<void> deleteFood(int id) async {
     await DatabaseHelper.instance.deleteFood(id);
     loadFoods();
@@ -400,17 +410,17 @@ class _BrandPageState extends State<BrandPage> {
                             children: [
                               Text(
                                 "${food["calories"]}",
-                                style: const TextStyle(
-                                  color: Color(0xff16A34A),
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: calorieColor(food["calories"]),
                                 ),
                               ),
                               const Text(
                                 "kcal",
                                 style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 11,
+                                  fontSize: 12,
+                                  color: Color(0xFF9CA3AF),
                                 ),
                               ),
                             ],
