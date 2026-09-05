@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
+
 import '../database/database_helper.dart';
-import 'brand_page.dart';
 import 'add_brand_page.dart';
-import 'settings_page.dart';
+import 'brand_page.dart';
 import 'category_manage_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,40 +14,49 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final DatabaseHelper db = DatabaseHelper.instance;
+  final db = DatabaseHelper.instance;
 
-  final List<String> categories = [
-    "奶茶",
-    "果茶",
-    "咖啡",
-    "甜品",
-    "糖水",
-    "轻食",
-    "烘焙",
-    "三明治",
-    "西式快餐",
-    "中式快餐",
-  ];
+  List<Map<String, dynamic>> categories = [];
+  List<Map<String, dynamic>> brands = [];
 
-  String selectedCategory = "奶茶";
+  String selectedCategory = "";
   String searchText = "";
   int bottomIndex = 0;
-
-  List<Map<String, dynamic>> brands = [];
 
   @override
   void initState() {
     super.initState();
-    loadBrands();
+    loadData();
+  }
+
+  /// 加载分类 + 品牌
+  Future<void> loadData() async {
+    final categoryData = await db.getCategories();
+
+    if (categoryData.isEmpty) return;
+
+    if (selectedCategory.isEmpty ||
+        !categoryData.any((e) => e["name"] == selectedCategory)) {
+      selectedCategory = categoryData.first["name"];
+    }
+
+    final brandData = await db.getBrands(selectedCategory);
+
+    setState(() {
+      categories = categoryData;
+      brands = brandData
+          .where((e) => e["name"].toString().contains(searchText))
+          .toList();
+    });
   }
 
   Future<void> loadBrands() async {
-    final data = await db.getBrands(selectedCategory);
+    final brandData = await db.getBrands(selectedCategory);
 
     setState(() {
-      brands = data.where((e) {
-        return e["name"].toString().contains(searchText);
-      }).toList();
+      brands = brandData
+          .where((e) => e["name"].toString().contains(searchText))
+          .toList();
     });
   }
 
@@ -55,15 +64,24 @@ class _HomePageState extends State<HomePage> {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => AddBrandPage(
-          category: selectedCategory,
-        ),
+        builder: (_) => AddBrandPage(category: selectedCategory),
       ),
     );
 
     if (result == true) {
-      await loadBrands();
+      loadBrands();
     }
+  }
+
+  Future<void> openCategoryManage() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CategoryManagePage(),
+      ),
+    );
+
+    await loadData();
   }
 
   @override
@@ -76,7 +94,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             const SizedBox(height: 12),
 
-            // ================= 搜索栏 + 设置 =================
+            // 搜索 + 设置
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18),
               child: Row(
@@ -94,24 +112,24 @@ class _HomePageState extends State<HomePage> {
                           loadBrands();
                         },
                         decoration: const InputDecoration(
-                          hintText: "",
+                          hintText: "搜索品牌",
                           prefixIcon: Icon(Icons.search),
                           border: InputBorder.none,
                         ),
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 10),
-
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const SettingsPage(),
                         ),
                       );
+
+                      await loadData();
                     },
                     child: Container(
                       width: 48,
@@ -123,10 +141,9 @@ class _HomePageState extends State<HomePage> {
                       child: const Icon(
                         Icons.settings,
                         color: Colors.white,
-                        size: 22,
                       ),
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
@@ -136,7 +153,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               child: Row(
                 children: [
-                  // ================= 左侧分类 =================
+                  // 左侧分类
                   Container(
                     width: 96,
                     margin: const EdgeInsets.only(left: 14, bottom: 12),
@@ -148,40 +165,28 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       itemCount: categories.length + 1,
                       itemBuilder: (_, index) {
-                        // 编辑按钮
                         if (index == categories.length) {
                           return Padding(
                             padding: const EdgeInsets.all(10),
-                            child: OutlinedButton.icon(
+                            child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(18),
                                 ),
                               ),
-                              onPressed: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                    const CategoryManagePage(),
-                                  ),
-                                );
-
-                                await loadBrands();
-                              },
-                              icon: const Icon(Icons.edit, size: 16),
-                              label: const Text(""),
+                              onPressed: openCategoryManage,
+                              child: const Icon(Icons.edit, size: 18),
                             ),
                           );
                         }
 
-                        final c = categories[index];
-                        final selected = c == selectedCategory;
+                        final category = categories[index]["name"];
+                        final selected = category == selectedCategory;
 
                         return GestureDetector(
                           onTap: () {
                             setState(() {
-                              selectedCategory = c;
+                              selectedCategory = category;
                             });
 
                             loadBrands();
@@ -200,7 +205,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                             child: Center(
                               child: Text(
-                                c,
+                                category,
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: selected
                                       ? Colors.white
@@ -218,7 +224,7 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(width: 12),
 
-                  // ================= 品牌区域 =================
+                  // 右侧品牌
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.only(right: 14, bottom: 12),
@@ -242,7 +248,7 @@ class _HomePageState extends State<HomePage> {
                               Text(
                                 "${brands.length} 个",
                                 style: const TextStyle(color: Colors.grey),
-                              ),
+                              )
                             ],
                           ),
 
@@ -256,7 +262,6 @@ class _HomePageState extends State<HomePage> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.grey,
-                                  fontSize: 15,
                                 ),
                               ),
                             )
@@ -280,10 +285,8 @@ class _HomePageState extends State<HomePage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => BrandPage(
-                                              brandId:
-                                              brand["id"] as int,
-                                              brandName:
-                                              brand["name"] as String,
+                                              brandId: brand["id"],
+                                              brandName: brand["name"],
                                               category:
                                               selectedCategory,
                                             ),
@@ -301,18 +304,15 @@ class _HomePageState extends State<HomePage> {
                                               width: 46,
                                               height: 46,
                                               decoration: BoxDecoration(
-                                                color: Colors
-                                                    .grey.shade200,
+                                                color:
+                                                Colors.grey.shade200,
                                                 shape: BoxShape.circle,
                                               ),
                                               child: const Icon(
                                                 Icons.store,
-                                                size: 22,
                                               ),
                                             ),
-
                                             const SizedBox(width: 14),
-
                                             Expanded(
                                               child: Text(
                                                 brand["name"],
@@ -323,11 +323,10 @@ class _HomePageState extends State<HomePage> {
                                                 ),
                                               ),
                                             ),
-
                                             const Icon(
                                               Icons.chevron_right,
                                               color: Colors.grey,
-                                            ),
+                                            )
                                           ],
                                         ),
                                       ),
@@ -336,33 +335,33 @@ class _HomePageState extends State<HomePage> {
                                 );
                               },
                             ),
-                          ),
+                          )
                         ],
                       ),
                     ),
-                  ),
+                  )
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
 
-      // ================= 底部导航 =================
+      // 底部导航
       bottomNavigationBar: SafeArea(
         child: Container(
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.92),
+            color: Colors.white.withOpacity(.92),
             borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _navItem(Icons.menu_book, "热量库", 0),
-              _addButton(),
-              _navItem(Icons.casino_outlined, "转盘", 2),
+              navItem(Icons.menu_book, "热量库", 0),
+              addButton(),
+              navItem(Icons.casino_outlined, "转盘", 2),
             ],
           ),
         ),
@@ -370,14 +369,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _navItem(IconData icon, String text, int index) {
+  Widget navItem(IconData icon, String text, int index) {
     final selected = bottomIndex == index;
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          bottomIndex = index;
-        });
+        setState(() => bottomIndex = index);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -393,26 +390,25 @@ class _HomePageState extends State<HomePage> {
             Icon(
               icon,
               color: selected ? Colors.white : Colors.grey,
-              size: 22,
             ),
             const SizedBox(height: 2),
             Text(
               text,
               style: TextStyle(
                 color: selected ? Colors.white : Colors.grey,
-                fontWeight: FontWeight.w600,
                 fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-  Widget _addButton() {
+  Widget addButton() {
     return GestureDetector(
-      onTap: openAddBrand,
+      onTap: selectedCategory.isEmpty ? null : openAddBrand,
       child: Container(
         width: 58,
         height: 58,

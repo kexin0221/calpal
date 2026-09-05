@@ -99,7 +99,7 @@ class _BrandPageState extends State<BrandPage> {
   // 新增产品
   //==========================
   Future<void> addFood() async {
-    final result = await Navigator.push(
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => AddFoodPage(
@@ -110,7 +110,11 @@ class _BrandPageState extends State<BrandPage> {
     );
 
     if (result == true) {
-      loadFoods();
+      await loadFoods();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("产品添加成功")),
+      );
     }
   }
 
@@ -137,7 +141,7 @@ class _BrandPageState extends State<BrandPage> {
             TextField(
               controller: calorieController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "热量"),
+              decoration: const InputDecoration(labelText: "热量(kcal)"),
             ),
           ],
         ),
@@ -156,13 +160,30 @@ class _BrandPageState extends State<BrandPage> {
 
     if (ok != true) return;
 
+    final name = nameController.text.trim();
+    final calories = int.tryParse(calorieController.text);
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("产品名称不能为空")),
+      );
+      return;
+    }
+
+    if (calories == null || calories <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("请输入正确的热量")),
+      );
+      return;
+    }
+
     await DatabaseHelper.instance.updateFood(
       id: food["id"],
-      name: nameController.text.trim(),
-      calories: int.tryParse(calorieController.text) ?? 0,
+      name: name,
+      calories: calories,
     );
 
-    loadFoods();
+    await loadFoods();
   }
 
   //==========================
@@ -198,20 +219,33 @@ class _BrandPageState extends State<BrandPage> {
   // CSV 导入
   //==========================
   Future<void> importCsv() async {
-    final list = await CsvService.pickCsv();
+    try {
+      final list = await CsvService.pickCsv();
 
-    if (list == null) return;
+      if (list == null) return;
 
-    await DatabaseHelper.instance.addFoodsBatch(
-      brandId: widget.brandId,
-      foods: list,
-    );
+      if (list.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("CSV 中没有可导入的数据")),
+        );
+        return;
+      }
 
-    await loadFoods();
+      await DatabaseHelper.instance.addFoodsBatch(
+        brandId: widget.brandId,
+        foods: list,
+      );
 
-    if (mounted) {
+      await loadFoods();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("成功导入 ${list.length} 个产品")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("成功导入 ${list.length} 个产品")),
+        SnackBar(content: Text("导入失败：$e")),
       );
     }
   }

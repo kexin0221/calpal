@@ -17,9 +17,15 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     loadCategories();
   }
 
+  /// ⭐ 关键修复：把 QueryRow 转成可修改的 Map
   Future<void> loadCategories() async {
-    categories = await DatabaseHelper.instance.getCategories();
-    setState(() {});
+    final data = await DatabaseHelper.instance.getCategories();
+
+    categories = data
+        .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+        .toList();
+
+    if (mounted) setState(() {});
   }
 
   // 新增分类
@@ -54,7 +60,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     if (name == null || name.isEmpty) return;
 
     await DatabaseHelper.instance.addCategory(name);
-    loadCategories();
+    await loadCategories();
   }
 
   // 编辑分类
@@ -85,12 +91,8 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
 
     if (name == null || name.isEmpty) return;
 
-    await DatabaseHelper.instance.updateCategory(
-      item["id"],
-      name,
-    );
-
-    loadCategories();
+    await DatabaseHelper.instance.updateCategory(item["id"], name);
+    await loadCategories();
   }
 
   // 删除分类
@@ -99,7 +101,9 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("删除分类"),
-        content: Text("确定删除「${item["name"]}」吗？"),
+        content: Text(
+          "确定删除「${item["name"]}」吗？\n该分类下的品牌和产品也会一起删除。",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -119,14 +123,11 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     if (ok != true) return;
 
     await DatabaseHelper.instance.deleteCategory(item["id"]);
-    loadCategories();
+    await loadCategories();
   }
 
-  // 拖动排序
-  Future<void> reorder(
-      int oldIndex,
-      int newIndex,
-      ) async {
+  // ⭐ 排序
+  Future<void> reorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
 
     final item = categories.removeAt(oldIndex);
@@ -153,7 +154,6 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
       body: Column(
         children: [
           const SizedBox(height: 8),
-
           Expanded(
             child: ReorderableListView.builder(
               padding:
@@ -218,7 +218,6 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
               },
             ),
           ),
-
           Padding(
             padding:
             const EdgeInsets.fromLTRB(16, 8, 16, 24),

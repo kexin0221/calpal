@@ -23,7 +23,19 @@ class _AddFoodPageState extends State<AddFoodPage> {
     final name = nameController.text.trim();
     final calories = int.tryParse(calorieController.text);
 
-    if (name.isEmpty || calories == null) return;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("请输入产品名称")),
+      );
+      return;
+    }
+
+    if (calories == null || calories <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("请输入正确的热量")),
+      );
+      return;
+    }
 
     await DatabaseHelper.instance.addFood(
       brandId: widget.brandId,
