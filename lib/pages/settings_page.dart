@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -7,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../services/export_service.dart';
 import '../services/import_service.dart';
+import 'category_manage_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -38,9 +38,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
 
-    if (mounted) {
-      setState(() => loading = false);
-    }
+    if (mounted) setState(() => loading = false);
   }
 
   Future<void> importDatabase() async {
@@ -55,7 +53,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
     try {
       final file = File(result.files.single.path!);
-
       await ImportService.importDatabase(file);
 
       if (mounted) {
@@ -71,9 +68,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
 
-    if (mounted) {
-      setState(() => loading = false);
-    }
+    if (mounted) setState(() => loading = false);
   }
 
   Widget item({
@@ -100,9 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right_rounded),
@@ -118,7 +111,7 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xffF5F5F7),
         centerTitle: true,
-        title: const Text("热量库管理"),
+        title: const Text("设置"),
       ),
       body: Stack(
         children: [
@@ -151,7 +144,7 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 28),
 
               const Text(
-                "关于",
+                "管理",
                 style: TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.w600,
@@ -159,24 +152,18 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 10),
 
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const ListTile(
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 8,
-                  ),
-                  leading: CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Color(0xffF5F5F7),
-                    child: Icon(Icons.favorite_outline),
-                  ),
-                  title: Text("CalPal"),
-                  subtitle: Text("Version 1.0.0"),
-                ),
+              item(
+                icon: Icons.category_outlined,
+                title: "分类管理",
+                subtitle: "新增、编辑、删除和排序分类",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CategoryManagePage(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -187,7 +174,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
-            )
+            ),
         ],
       ),
     );

@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // 搜索 + 设置
             Padding(
@@ -155,7 +155,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   // 左侧分类
                   Container(
-                    width: 96,
+                    width: 112,
                     margin: const EdgeInsets.only(left: 14, bottom: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -163,22 +163,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      itemCount: categories.length + 1,
+                      itemCount: categories.length,
                       itemBuilder: (_, index) {
-                        if (index == categories.length) {
-                          return Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              onPressed: openCategoryManage,
-                              child: const Icon(Icons.edit, size: 18),
-                            ),
-                          );
-                        }
 
                         final category = categories[index]["name"];
                         final selected = category == selectedCategory;
@@ -193,7 +179,7 @@ class _HomePageState extends State<HomePage> {
                           },
                           child: Container(
                             margin: const EdgeInsets.symmetric(
-                              horizontal: 10,
+                              horizontal: 8,
                               vertical: 5,
                             ),
                             height: 52,
@@ -203,17 +189,37 @@ class _HomePageState extends State<HomePage> {
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            child: Center(
-                              child: Text(
-                                category,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: selected
-                                      ? Colors.white
-                                      : Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      category,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: selected
+                                            ? Colors.white
+                                            : Colors.black87,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  if (selected) ...[
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${brands.length}",
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ]
+                                ],
                               ),
                             ),
                           ),
@@ -233,110 +239,72 @@ class _HomePageState extends State<HomePage> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(28),
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Text(
-                                "品牌",
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                "${brands.length} 个",
-                                style: const TextStyle(color: Colors.grey),
-                              )
-                            ],
+                      child: brands.isEmpty
+                          ? const Center(
+                        child: Text(
+                          "暂无品牌\n点击下方 + 添加",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey,
                           ),
+                        ),
+                      )
+                          : ListView.builder(
+                        itemCount: brands.length,
+                        itemBuilder: (_, i) {
+                          final brand = brands[i];
 
-                          const SizedBox(height: 12),
-
-                          Expanded(
-                            child: brands.isEmpty
-                                ? const Center(
-                              child: Text(
-                                "暂无品牌\n点击下方 + 添加",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            )
-                                : ListView.builder(
-                              itemCount: brands.length,
-                              itemBuilder: (_, i) {
-                                final brand = brands[i];
-
-                                return Padding(
-                                  padding:
-                                  const EdgeInsets.only(bottom: 10),
-                                  child: Material(
-                                    color: const Color(0xffFAFAFA),
-                                    borderRadius:
-                                    BorderRadius.circular(18),
-                                    child: InkWell(
-                                      borderRadius:
-                                      BorderRadius.circular(18),
-                                      onTap: () async {
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => BrandPage(
-                                              brandId: brand["id"],
-                                              brandName: brand["name"],
-                                              category:
-                                              selectedCategory,
-                                            ),
-                                          ),
-                                        );
-
-                                        loadBrands();
-                                      },
-                                      child: Container(
-                                        padding:
-                                        const EdgeInsets.all(16),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 46,
-                                              height: 46,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                Colors.grey.shade200,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.store,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 14),
-                                            Expanded(
-                                              child: Text(
-                                                brand["name"],
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight:
-                                                  FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                            const Icon(
-                                              Icons.chevron_right,
-                                              color: Colors.grey,
-                                            )
-                                          ],
-                                        ),
+                          return Padding(
+                            padding:
+                            const EdgeInsets.only(bottom: 10),
+                            child: Material(
+                              color: const Color(0xffFAFAFA),
+                              borderRadius:
+                              BorderRadius.circular(18),
+                              child: InkWell(
+                                borderRadius:
+                                BorderRadius.circular(18),
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BrandPage(
+                                        brandId: brand["id"],
+                                        brandName: brand["name"],
+                                        category: selectedCategory,
                                       ),
                                     ),
+                                  );
+
+                                  loadBrands();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 18,
                                   ),
-                                );
-                              },
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          brand["name"],
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        color: Colors.grey,
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          )
-                        ],
+                          );
+                        },
                       ),
                     ),
                   )

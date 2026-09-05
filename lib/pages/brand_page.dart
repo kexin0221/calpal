@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../database/database_helper.dart';
 import '../services/csv_service.dart';
 import 'add_food_page.dart';
+
 
 class BrandPage extends StatefulWidget {
   final int brandId;
@@ -395,25 +396,38 @@ class _BrandPageState extends State<BrandPage> {
             ),
             onPressed: showFilterSheet,
           ),
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.black),
-            onPressed: addFood,
-          ),
           PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == "csv") importCsv();
+            onSelected: (value) {
+              switch (value) {
+                case "add":
+                  addFood();
+                  break;
+                case "csv":
+                  importCsv();
+                  break;
+              }
             },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: "add",
+                child: Row(
+                  children: [
+                    Icon(Icons.add_circle_outline),
+                    SizedBox(width: 10),
+                    Text("添加产品"),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: "csv",
                 child: Row(
                   children: [
                     Icon(Icons.table_chart_outlined),
-                    SizedBox(width: 8),
+                    SizedBox(width: 10),
                     Text("导入 CSV"),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ],
@@ -463,90 +477,84 @@ class _BrandPageState extends State<BrandPage> {
               itemBuilder: (context, index) {
                 final food = displayFoods[index];
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          food["name"],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Slidable(
+                    key: ValueKey(food["id"]),
+
+                    endActionPane: ActionPane(
+                      motion: const DrawerMotion(),
+                      extentRatio: 0.42,
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) => editFood(food),
+                          backgroundColor: const Color(0xFF2D2D2D),
+                          foregroundColor: Colors.white,
+                          icon: Icons.edit_outlined,
+                          label: "编辑",
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            bottomLeft: Radius.circular(18),
                           ),
                         ),
-                      ),
+                        SlidableAction(
+                          onPressed: (_) => deleteFood(food),
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete_outline,
+                          label: "删除",
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(18),
+                            bottomRight: Radius.circular(18),
+                          ),
+                        ),
+                      ],
+                    ),
 
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            "${food["calories"]}",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: calorieColor(food["calories"]),
+                          Expanded(
+                            child: Text(
+                              food["name"],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          const Text(
-                            "kcal",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                            ),
+
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                "${food["calories"]}",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: calorieColor(food["calories"]),
+                                ),
+                              ),
+                              const Text(
+                                "kcal",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-
-                      const SizedBox(width: 8),
-
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, size: 20),
-                        onSelected: (value) {
-                          if (value == "edit") {
-                            editFood(food);
-                          } else {
-                            deleteFood(food);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: "edit",
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined),
-                                SizedBox(width: 8),
-                                Text("编辑"),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: "delete",
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  "删除",
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 );
               },
