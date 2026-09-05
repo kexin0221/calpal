@@ -67,11 +67,22 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  web:
-    generate: true
+
   image_path: "assets/icon.png"
+
+  # Android 13+ 自适应图标
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon.png"
+
+  # iOS 保留透明边缘，避免自动填黑
+  remove_alpha_ios: false
+
+  # Web 图标（可选）
+  web:
+    generate: true
+    image_path: "assets/icon.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
 
   # To add assets to your application, add an assets section, like this:
   # assets:
