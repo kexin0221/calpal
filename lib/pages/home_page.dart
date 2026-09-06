@@ -18,6 +18,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> brands = [];
+  List<Map<String, dynamic>> filteredCategories = [];
 
   String selectedCategory = "";
   String searchText = "";
@@ -44,8 +45,13 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       categories = categoryData;
+      filteredCategories = List.from(categoryData);
+
       brands = brandData
-          .where((e) => e["name"].toString().contains(searchText))
+          .where((e) => e["name"]
+          .toString()
+          .toLowerCase()
+          .contains(searchText.toLowerCase()))
           .toList();
     });
   }
@@ -54,8 +60,74 @@ class _HomePageState extends State<HomePage> {
     final brandData = await db.getBrands(selectedCategory);
 
     setState(() {
-      brands = brandData
-          .where((e) => e["name"].toString().contains(searchText))
+      if (searchText.isEmpty) {
+        // 正常状态：显示当前分类全部品牌
+        brands = brandData;
+      } else {
+        // 搜索状态：只显示匹配品牌
+        brands = brandData
+            .where((e) => e["name"]
+            .toString()
+            .toLowerCase()
+            .contains(searchText.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  Future<void> searchBrands(String keyword) async {
+    searchText = keyword.trim();
+
+    // 清空搜索：恢复全部分类
+    if (searchText.isEmpty) {
+      filteredCategories = List.from(categories);
+
+      if (!filteredCategories.any((e) => e["name"] == selectedCategory)) {
+        selectedCategory = filteredCategories.first["name"];
+      }
+
+      await loadBrands();
+      return;
+    }
+
+    final result = <Map<String, dynamic>>[];
+
+    // 按原分类顺序查找
+    for (final category in categories) {
+      final list =
+      await db.getBrands(category["name"] as String);
+
+      final matched = list
+          .where((e) => e["name"]
+          .toString()
+          .toLowerCase()
+          .contains(searchText.toLowerCase()))
+          .toList();
+
+      if (matched.isNotEmpty) {
+        result.add(category);
+      }
+    }
+
+    if (result.isEmpty) {
+      setState(() {
+        filteredCategories = [];
+        brands = [];
+      });
+      return;
+    }
+
+    selectedCategory = result.first["name"];
+
+    final firstBrands = await db.getBrands(selectedCategory);
+
+    setState(() {
+      filteredCategories = result;
+      brands = firstBrands
+          .where((e) => e["name"]
+          .toString()
+          .toLowerCase()
+          .contains(searchText.toLowerCase()))
           .toList();
     });
   }
@@ -107,10 +179,7 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
-                        onChanged: (v) {
-                          searchText = v;
-                          loadBrands();
-                        },
+                        onChanged: searchBrands,
                         decoration: const InputDecoration(
                           hintText: "搜索品牌",
                           prefixIcon: Icon(Icons.search),
@@ -163,10 +232,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      itemCount: categories.length,
+                      itemCount: filteredCategories.length,
                       itemBuilder: (_, index) {
 
-                        final category = categories[index]["name"];
+                        final category = filteredCategories[index]["name"];
                         final selected = category == selectedCategory;
 
                         return GestureDetector(
@@ -208,7 +277,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ),
                                   ),
-                                  if (selected) ...[
+                                  if (selected && searchText.isEmpty) ...[
                                     const SizedBox(width: 4),
                                     Text(
                                       "${brands.length}",
