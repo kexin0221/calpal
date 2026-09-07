@@ -5,6 +5,7 @@ import 'add_brand_page.dart';
 import 'brand_page.dart';
 import 'category_manage_page.dart';
 import 'settings_page.dart';
+import 'wheel_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -162,223 +163,229 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F5),
 
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
+      body: IndexedStack(
+        index: bottomIndex == 2 ? 1 : 0,
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
 
-            // 搜索 + 设置
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: TextField(
-                        textAlignVertical: TextAlignVertical.center,
-                        onChanged: searchBrands,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          border: InputBorder.none,
-                          isCollapsed: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SettingsPage()),
-                      );
-
-                      await loadData();
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        color: Colors.black,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.settings, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            Expanded(
-              child: Row(
-                children: [
-                  // 左侧分类
-                  Container(
-                    width: 112,
-                    margin: const EdgeInsets.only(left: 14, bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      itemCount: filteredCategories.length,
-                      itemBuilder: (_, index) {
-                        final category = filteredCategories[index]["name"];
-                        final selected = category == selectedCategory;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedCategory = category;
-                            });
-
-                            loadBrands();
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 5,
-                            ),
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? Colors.black
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      category,
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: selected
-                                            ? Colors.white
-                                            : Colors.black87,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                  if (selected && searchText.isEmpty) ...[
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      "${brands.length}",
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                // 搜索 + 设置
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: TextField(
+                            textAlignVertical: TextAlignVertical.center,
+                            onChanged: searchBrands,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.search),
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // 右侧品牌
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 14, bottom: 12),
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(28),
+                        ),
                       ),
-                      child: brands.isEmpty
-                          ? const Center(
-                              child: Text(
-                                "暂无品牌\n点击下方 + 添加",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsPage(),
+                            ),
+                          );
+                          await loadData();
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.settings, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                Expanded(
+                  child: Row(
+                    children: [
+                      // ===== 左侧分类 =====
+                      Container(
+                        width: 112,
+                        margin: const EdgeInsets.only(left: 14, bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          itemCount: filteredCategories.length,
+                          itemBuilder: (_, index) {
+                            final category = filteredCategories[index]["name"];
+                            final selected = category == selectedCategory;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedCategory = category;
+                                });
+                                loadBrands();
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 5,
+                                ),
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? Colors.black
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          category,
+                                          textAlign: TextAlign.center,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: selected
+                                                ? Colors.white
+                                                : Colors.black87,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      if (selected && searchText.isEmpty) ...[
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "${brands.length}",
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
                               ),
-                            )
-                          : ListView.builder(
-                              itemCount: brands.length,
-                              itemBuilder: (_, i) {
-                                final brand = brands[i];
+                            );
+                          },
+                        ),
+                      ),
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: Material(
-                                    color: const Color(0xffFAFAFA),
+                      const SizedBox(width: 12),
+
+                      // ===== 右侧品牌 =====
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 14, bottom: 12),
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          child: brands.isEmpty
+                              ? const Center(
+                            child: Text(
+                              "暂无品牌\n点击下方 + 添加",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                              : ListView.builder(
+                            itemCount: brands.length,
+                            itemBuilder: (_, i) {
+                              final brand = brands[i];
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Material(
+                                  color: const Color(0xffFAFAFA),
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: InkWell(
                                     borderRadius: BorderRadius.circular(18),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(18),
-                                      onTap: () async {
-                                        final result =
-                                            await Navigator.push<bool>(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => BrandPage(
-                                                  brandId: brand["id"],
-                                                  brandName: brand["name"],
-                                                  category: selectedCategory,
-                                                ),
-                                              ),
-                                            );
+                                    onTap: () async {
+                                      final result =
+                                      await Navigator.push<bool>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BrandPage(
+                                            brandId: brand["id"],
+                                            brandName: brand["name"],
+                                            category: selectedCategory,
+                                          ),
+                                        ),
+                                      );
 
-                                        if (result == true) {
-                                          await loadBrands();
-                                        }
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 18,
-                                          vertical: 18,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                brand["name"],
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                                      if (result == true) {
+                                        await loadBrands();
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 18,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              brand["name"],
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            const Icon(
-                                              Icons.chevron_right,
-                                              color: Colors.grey,
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                          const Icon(
+                                            Icons.chevron_right,
+                                            color: Colors.grey,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-                    ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // ===== 转盘页 =====
+          const WheelPage(),
+        ],
       ),
 
       // 底部导航

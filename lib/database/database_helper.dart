@@ -419,4 +419,5 @@ class DatabaseHelper {
     final db = await database;
     await db.insert("categories", data);
   }
+
 }
