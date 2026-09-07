@@ -475,6 +475,7 @@ class _BrandPageState extends State<BrandPage> {
                       borderRadius: BorderRadius.circular(22),
                     ),
                     child: TextField(
+                      textAlignVertical: TextAlignVertical.center,
                       onChanged: (value) {
                         searchText = value;
                         applyFilterAndSort();
@@ -482,6 +483,8 @@ class _BrandPageState extends State<BrandPage> {
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.search),
                         border: InputBorder.none,
+                        isCollapsed: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -555,7 +558,7 @@ class _BrandPageState extends State<BrandPage> {
                           key: ValueKey(food["id"]),
                           endActionPane: ActionPane(
                             motion: const DrawerMotion(),
-                            extentRatio: 0.42,
+                            extentRatio: 0.50,
                             children: [
                               SlidableAction(
                                 onPressed: (_) => editFood(food),

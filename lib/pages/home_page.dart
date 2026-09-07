@@ -180,10 +180,13 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
+                        textAlignVertical: TextAlignVertical.center,
                         onChanged: searchBrands,
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.search),
                           border: InputBorder.none,
+                          isCollapsed: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
