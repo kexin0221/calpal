@@ -48,10 +48,11 @@ class _HomePageState extends State<HomePage> {
       filteredCategories = List.from(categoryData);
 
       brands = brandData
-          .where((e) => e["name"]
-          .toString()
-          .toLowerCase()
-          .contains(searchText.toLowerCase()))
+          .where(
+            (e) => e["name"].toString().toLowerCase().contains(
+              searchText.toLowerCase(),
+            ),
+          )
           .toList();
     });
   }
@@ -66,10 +67,11 @@ class _HomePageState extends State<HomePage> {
       } else {
         // 搜索状态：只显示匹配品牌
         brands = brandData
-            .where((e) => e["name"]
-            .toString()
-            .toLowerCase()
-            .contains(searchText.toLowerCase()))
+            .where(
+              (e) => e["name"].toString().toLowerCase().contains(
+                searchText.toLowerCase(),
+              ),
+            )
             .toList();
       }
     });
@@ -94,14 +96,14 @@ class _HomePageState extends State<HomePage> {
 
     // 按原分类顺序查找
     for (final category in categories) {
-      final list =
-      await db.getBrands(category["name"] as String);
+      final list = await db.getBrands(category["name"] as String);
 
       final matched = list
-          .where((e) => e["name"]
-          .toString()
-          .toLowerCase()
-          .contains(searchText.toLowerCase()))
+          .where(
+            (e) => e["name"].toString().toLowerCase().contains(
+              searchText.toLowerCase(),
+            ),
+          )
           .toList();
 
       if (matched.isNotEmpty) {
@@ -124,10 +126,11 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       filteredCategories = result;
       brands = firstBrands
-          .where((e) => e["name"]
-          .toString()
-          .toLowerCase()
-          .contains(searchText.toLowerCase()))
+          .where(
+            (e) => e["name"].toString().toLowerCase().contains(
+              searchText.toLowerCase(),
+            ),
+          )
           .toList();
     });
   }
@@ -148,9 +151,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> openCategoryManage() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const CategoryManagePage(),
-      ),
+      MaterialPageRoute(builder: (_) => const CategoryManagePage()),
     );
 
     await loadData();
@@ -181,7 +182,6 @@ class _HomePageState extends State<HomePage> {
                       child: TextField(
                         onChanged: searchBrands,
                         decoration: const InputDecoration(
-                          hintText: "搜索品牌",
                           prefixIcon: Icon(Icons.search),
                           border: InputBorder.none,
                         ),
@@ -193,9 +193,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () async {
                       await Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsPage(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const SettingsPage()),
                       );
 
                       await loadData();
@@ -207,12 +205,9 @@ class _HomePageState extends State<HomePage> {
                         color: Colors.black,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.settings,
-                        color: Colors.white,
-                      ),
+                      child: const Icon(Icons.settings, color: Colors.white),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -234,7 +229,6 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       itemCount: filteredCategories.length,
                       itemBuilder: (_, index) {
-
                         final category = filteredCategories[index]["name"];
                         final selected = category == selectedCategory;
 
@@ -259,7 +253,9 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -287,7 +283,7 @@ class _HomePageState extends State<HomePage> {
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  ]
+                                  ],
                                 ],
                               ),
                             ),
@@ -310,76 +306,74 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: brands.isEmpty
                           ? const Center(
-                        child: Text(
-                          "暂无品牌\n点击下方 + 添加",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      )
+                              child: Text(
+                                "暂无品牌\n点击下方 + 添加",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
                           : ListView.builder(
-                        itemCount: brands.length,
-                        itemBuilder: (_, i) {
-                          final brand = brands[i];
+                              itemCount: brands.length,
+                              itemBuilder: (_, i) {
+                                final brand = brands[i];
 
-                          return Padding(
-                            padding:
-                            const EdgeInsets.only(bottom: 10),
-                            child: Material(
-                              color: const Color(0xffFAFAFA),
-                              borderRadius:
-                              BorderRadius.circular(18),
-                              child: InkWell(
-                                borderRadius:
-                                BorderRadius.circular(18),
-                                onTap: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BrandPage(
-                                        brandId: brand["id"],
-                                        brandName: brand["name"],
-                                        category: selectedCategory,
-                                      ),
-                                    ),
-                                  );
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Material(
+                                    color: const Color(0xffFAFAFA),
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(18),
+                                      onTap: () async {
+                                        final result =
+                                            await Navigator.push<bool>(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => BrandPage(
+                                                  brandId: brand["id"],
+                                                  brandName: brand["name"],
+                                                  category: selectedCategory,
+                                                ),
+                                              ),
+                                            );
 
-                                  loadBrands();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 18,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          brand["name"],
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                        if (result == true) {
+                                          await loadBrands();
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 18,
+                                          vertical: 18,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                brand["name"],
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.chevron_right,
+                                              color: Colors.grey,
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const Icon(
-                                        Icons.chevron_right,
-                                        color: Colors.grey,
-                                      )
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -390,7 +384,7 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(.92),
+            color: Colors.white.withValues(alpha: .92),
             borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
@@ -424,10 +418,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: selected ? Colors.white : Colors.grey,
-            ),
+            Icon(icon, color: selected ? Colors.white : Colors.grey),
             const SizedBox(height: 2),
             Text(
               text,
@@ -436,7 +427,7 @@ class _HomePageState extends State<HomePage> {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -453,11 +444,7 @@ class _HomePageState extends State<HomePage> {
           color: Colors.black,
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 30,
-        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
     );
   }
