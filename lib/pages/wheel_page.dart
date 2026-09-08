@@ -93,10 +93,14 @@ class _WheelPageState extends State<WheelPage>
         if (selectedRanges.contains("0-300") && c < 300) ok = true;
         if (selectedRanges.contains("300-400") &&
             c >= 300 &&
-            c < 400) ok = true;
+            c < 400) {
+          ok = true;
+        }
         if (selectedRanges.contains("400-500") &&
             c >= 400 &&
-            c < 500) ok = true;
+            c < 500) {
+          ok = true;
+        }
         if (selectedRanges.contains("500+") && c >= 500) ok = true;
 
         if (!ok) return false;

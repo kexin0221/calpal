@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   String selectedCategory = "";
   String searchText = "";
   int bottomIndex = 0;
+  int wheelRefreshKey = 0;
 
   @override
   void initState() {
@@ -55,6 +56,14 @@ class _HomePageState extends State<HomePage> {
             ),
           )
           .toList();
+    });
+  }
+
+  Future<void> refreshWheel() async {
+    await loadData();
+
+    setState(() {
+      wheelRefreshKey++;
     });
   }
 
@@ -204,7 +213,8 @@ class _HomePageState extends State<HomePage> {
                               builder: (_) => const SettingsPage(),
                             ),
                           );
-                          await loadData();
+
+                          await refreshWheel();
                         },
                         child: Container(
                           width: 48,
@@ -384,7 +394,9 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // ===== 转盘页 =====
-          const WheelPage(),
+          WheelPage(
+            key: ValueKey(wheelRefreshKey),
+          ),
         ],
       ),
 
@@ -414,8 +426,14 @@ class _HomePageState extends State<HomePage> {
     final selected = bottomIndex == index;
 
     return GestureDetector(
-      onTap: () {
-        setState(() => bottomIndex = index);
+      onTap: () async {
+        if (index == 2) {
+          await refreshWheel();
+        }
+
+        setState(() {
+          bottomIndex = index;
+        });
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
