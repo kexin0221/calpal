@@ -23,21 +23,56 @@ class DatabaseHelper {
       version: 6,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
+      onOpen: (db) async {
+        await _createMissingTables(db);
+      },
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
+    // 分类
     await db.execute("""
-      CREATE TABLE brands(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT NOT NULL,
-        name TEXT NOT NULL,
-        remark TEXT DEFAULT '',
-        isTop INTEGER DEFAULT 0
-      )
-    """);
+    CREATE TABLE categories(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      sortOrder INTEGER NOT NULL
+    )
+  """);
 
-    final defaults = [
+    // 品牌
+    await db.execute("""
+    CREATE TABLE brands(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      name TEXT NOT NULL,
+      remark TEXT DEFAULT '',
+      isTop INTEGER DEFAULT 0
+    )
+  """);
+
+    // 产品
+    await db.execute("""
+    CREATE TABLE foods(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      brandId INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      calories INTEGER NOT NULL
+    )
+  """);
+
+    // 预设方案
+    await db.execute("""
+    CREATE TABLE presets(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      categories TEXT NOT NULL,
+      brands TEXT NOT NULL,
+      ranges TEXT NOT NULL
+    )
+  """);
+
+    // 默认分类
+    const defaults = [
       "奶茶",
       "果茶",
       "咖啡",
@@ -51,36 +86,11 @@ class DatabaseHelper {
     ];
 
     for (int i = 0; i < defaults.length; i++) {
-      await db.insert("categories", {"name": defaults[i], "sortOrder": i});
+      await db.insert("categories", {
+        "name": defaults[i],
+        "sortOrder": i,
+      });
     }
-
-    await db.execute("""
-      CREATE TABLE brands(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT NOT NULL,
-        name TEXT NOT NULL,
-        remark TEXT DEFAULT ''
-      )
-    """);
-
-    await db.execute("""
-      CREATE TABLE foods(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        brandId INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        calories INTEGER NOT NULL
-      )
-    """);
-
-    await db.execute("""
-      CREATE TABLE presets(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        categories TEXT NOT NULL,
-        brands TEXT NOT NULL,
-        ranges TEXT NOT NULL
-      )
-""");
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -142,6 +152,45 @@ class DatabaseHelper {
         )
   """);
     }
+  }
+
+  Future<void> _createMissingTables(Database db) async {
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS categories(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      sortOrder INTEGER NOT NULL
+    )
+  """);
+
+    await db.execute("""
+      CREATE TABLE IF NOT EXISTS brands(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        name TEXT NOT NULL,
+        remark TEXT DEFAULT '',
+        isTop INTEGER DEFAULT 0
+      )
+""");
+
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS foods(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      brandId INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      calories INTEGER NOT NULL
+    )
+  """);
+
+    await db.execute("""
+    CREATE TABLE IF NOT EXISTS presets(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      categories TEXT NOT NULL,
+      brands TEXT NOT NULL,
+      ranges TEXT NOT NULL
+    )
+  """);
   }
 
   //================ 分类 =================//
@@ -255,7 +304,7 @@ class DatabaseHelper {
       "brands",
       where: "category=?",
       whereArgs: [category],
-      orderBy: "isTop DESC,name COLLATE NOCASE ASC",
+      orderBy: "isTop DESC, name COLLATE NOCASE ASC",
     );
   }
 
@@ -500,28 +549,9 @@ class DatabaseHelper {
     await db.delete("foods");
     await db.delete("brands");
     await db.delete("categories");
+    await db.delete("presets");
 
     await db.execute("DELETE FROM sqlite_sequence");
-
-    final defaults = [
-      "奶茶",
-      "果茶",
-      "咖啡",
-      "甜品",
-      "糖水",
-      "轻食",
-      "烘焙",
-      "三明治",
-      "西式快餐",
-      "中式快餐",
-    ];
-
-    for (int i = 0; i < defaults.length; i++) {
-      await db.insert("categories", {"name": defaults[i], "sortOrder": i});
-    }
-
-    // 删除默认，再导入用户分类（避免旧分类残留）
-    await db.delete("categories");
   }
 
   Future<void> insertCategoryRaw(Map<String, dynamic> data) async {

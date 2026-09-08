@@ -199,7 +199,9 @@ class _HomePageState extends State<HomePage> {
                               prefixIcon: Icon(Icons.search),
                               border: InputBorder.none,
                               isCollapsed: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 12),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -214,7 +216,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                           );
 
-                          await refreshWheel();
+                          await loadData(); // 刷新热量库
+                          await refreshWheel(); // 刷新转盘
                         },
                         child: Container(
                           width: 48,
@@ -223,7 +226,10 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.black,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.settings, color: Colors.white),
+                          child: const Icon(
+                            Icons.settings,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
@@ -270,7 +276,9 @@ class _HomePageState extends State<HomePage> {
                                   borderRadius: BorderRadius.circular(18),
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -321,86 +329,100 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: brands.isEmpty
                               ? const Center(
-                            child: Text(
-                              "暂无品牌\n点击下方 + 添加",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
+                                  child: Text(
+                                    "暂无品牌\n点击下方 + 添加",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                )
                               : ListView.builder(
-                            itemCount: brands.length,
-                            itemBuilder: (_, i) {
-                              final brand = brands[i];
+                                  itemCount: brands.length,
+                                  itemBuilder: (_, i) {
+                                    final brand = brands[i];
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Material(
-                                  color: const Color(0xffFAFAFA),
-                                  borderRadius: BorderRadius.circular(18),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(18),
-                                    onTap: () async {
-                                      final result =
-                                      await Navigator.push<bool>(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => BrandPage(
-                                            brandId: brand["id"],
-                                            brandName: brand["name"],
-                                            category: selectedCategory,
-                                          ),
-                                        ),
-                                      );
-
-                                      if (result == true) {
-                                        await loadBrands();
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 18,
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
+                                      child: Material(
+                                        color: const Color(0xffFAFAFA),
+                                        borderRadius: BorderRadius.circular(18),
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          onTap: () async {
+                                            final result =
+                                                await Navigator.push<bool>(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => BrandPage(
+                                                      brandId: brand["id"],
+                                                      brandName: brand["name"],
+                                                      category:
+                                                          selectedCategory,
+                                                    ),
+                                                  ),
+                                                );
+
+                                            if (result == true) {
+                                              await loadBrands();
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 18,
+                                              vertical: 18,
+                                            ),
                                             child: Row(
                                               children: [
-                                                if ((brand["isTop"] ?? 0) == 1)
-                                                  const Padding(
-                                                    padding: EdgeInsets.only(right: 6),
-                                                    child: Icon(
-                                                      Icons.push_pin,
-                                                      size: 14,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-
                                                 Expanded(
-                                                  child: Text(
-                                                    brand["name"],
-                                                    style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                    overflow: TextOverflow.ellipsis,
+                                                  child: Row(
+                                                    children: [
+                                                      if ((brand["isTop"] ??
+                                                              0) ==
+                                                          1)
+                                                        const Padding(
+                                                          padding:
+                                                              EdgeInsets.only(
+                                                                right: 6,
+                                                              ),
+                                                          child: Icon(
+                                                            Icons.push_pin,
+                                                            size: 14,
+                                                            color: Colors.grey,
+                                                          ),
+                                                        ),
+
+                                                      Expanded(
+                                                        child: Text(
+                                                          brand["name"],
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 18,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
+                                                ),
+                                                const Icon(
+                                                  Icons.chevron_right,
+                                                  color: Colors.grey,
                                                 ),
                                               ],
                                             ),
                                           ),
-                                          const Icon(
-                                            Icons.chevron_right,
-                                            color: Colors.grey,
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
                         ),
                       ),
                     ],
@@ -411,9 +433,7 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // ===== 转盘页 =====
-          WheelPage(
-            key: ValueKey(wheelRefreshKey),
-          ),
+          WheelPage(key: ValueKey(wheelRefreshKey)),
         ],
       ),
 

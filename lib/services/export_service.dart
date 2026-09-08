@@ -12,15 +12,17 @@ class ExportService {
     final foods = await DatabaseHelper.instance.getAllFoods();
 
     final data = {
-      "version": 2,
-      "exportTime": DateTime.now().toIso8601String(),
-      "categories": categories,
-      "brands": brands,
-      "foods": foods,
+      "version": 6,
+      "categories": await DatabaseHelper.instance.getCategories(),
+      "brands": await DatabaseHelper.instance.getAllBrands(),
+      "foods": await DatabaseHelper.instance.getAllFoods(),
+      "presets": await DatabaseHelper.instance.getPresets(),
     };
 
     final dir = await getApplicationDocumentsDirectory();
-    final file = File("${dir.path}/calpal_backup.json");
+    final file = File(
+      "${dir.path}/calpal_backup_${DateTime.now().millisecondsSinceEpoch}.json",
+    );
 
     await file.writeAsString(
       const JsonEncoder.withIndent("  ").convert(data),
