@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -27,10 +27,12 @@ class DatabaseHelper {
 
   Future<void> _createDB(Database db, int version) async {
     await db.execute("""
-      CREATE TABLE categories(
+      CREATE TABLE brands(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
         name TEXT NOT NULL,
-        sortOrder INTEGER NOT NULL
+        remark TEXT DEFAULT '',
+        isTop INTEGER DEFAULT 0
       )
     """);
 
@@ -109,6 +111,12 @@ class DatabaseHelper {
     if (oldVersion < 4) {
       await db.execute(
         "ALTER TABLE brands ADD COLUMN remark TEXT DEFAULT ''",
+      );
+    }
+
+    if (oldVersion < 5) {
+      await db.execute(
+        "ALTER TABLE brands ADD COLUMN isTop INTEGER DEFAULT 0",
       );
     }
   }
@@ -224,7 +232,7 @@ class DatabaseHelper {
       "brands",
       where: "category=?",
       whereArgs: [category],
-      orderBy: "name",
+      orderBy: "isTop DESC,name COLLATE NOCASE ASC",
     );
   }
 
@@ -418,6 +426,22 @@ class DatabaseHelper {
   Future<void> insertCategoryRaw(Map<String, dynamic> data) async {
     final db = await database;
     await db.insert("categories", data);
+  }
+
+  Future<void> setBrandTop({
+    required int id,
+    required bool isTop,
+  }) async {
+    final db = await database;
+
+    await db.update(
+      "brands",
+      {
+        "isTop": isTop ? 1 : 0,
+      },
+      where: "id=?",
+      whereArgs: [id],
+    );
   }
 
 }

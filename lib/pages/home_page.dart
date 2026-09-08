@@ -364,12 +364,29 @@ class _HomePageState extends State<HomePage> {
                                       child: Row(
                                         children: [
                                           Expanded(
-                                            child: Text(
-                                              brand["name"],
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                            child: Row(
+                                              children: [
+                                                if ((brand["isTop"] ?? 0) == 1)
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(right: 6),
+                                                    child: Icon(
+                                                      Icons.push_pin,
+                                                      size: 14,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+
+                                                Expanded(
+                                                  child: Text(
+                                                    brand["name"],
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                           const Icon(
