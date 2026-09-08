@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
+import 'dart:convert';
 
 class WheelPage extends StatefulWidget {
   const WheelPage({super.key});
@@ -22,6 +23,7 @@ class _WheelPageState extends State<WheelPage>
 
   // 当前这一轮转盘显示的12个产品
   List<Map<String, dynamic>> wheelFoods = [];
+  List<Map<String, dynamic>> presets = [];
 
   Set<String> selectedCategories = {};
   Set<int> selectedBrands = {};
@@ -54,16 +56,153 @@ class _WheelPageState extends State<WheelPage>
 
   Future<void> loadData() async {
     setState(() => isLoading = true);
-    try {
-      categories = await db.getCategories();
-      brands = await db.getAllBrands();
-      foods = await db.getAllFoods();
-      filterFoods();
-    } catch (e) {
-      // 可添加错误处理
-    } finally {
+
+    categories = await db.getCategories();
+    brands = await db.getAllBrands();
+    foods = await db.getAllFoods();
+    presets = await db.getPresets();
+
+    filterFoods();
+
+    if (mounted) {
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> createPreset() async {
+    final controller = TextEditingController();
+
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("保存预设方案"),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: "例如：学校、公司",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(context, controller.text.trim()),
+            child: const Text("保存"),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.isEmpty) return;
+
+    await db.addPreset(
+      name: name,
+      categories: selectedCategories,
+      brands: selectedBrands,
+      ranges: selectedRanges,
+    );
+
+    presets = await db.getPresets();
+    setState(() {});
+  }
+
+  void applyPreset(Map<String, dynamic> preset) {
+    selectedCategories = Set<String>.from(
+      List<String>.from(jsonDecode(preset["categories"])),
+    );
+
+    selectedBrands = Set<int>.from(
+      List<int>.from(jsonDecode(preset["brands"])),
+    );
+
+    selectedRanges = Set<String>.from(
+      List<String>.from(jsonDecode(preset["ranges"])),
+    );
+
+    filterFoods();
+  }
+
+  Future<void> presetMenu(Map<String, dynamic> preset) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text("重命名"),
+              onTap: () => Navigator.pop(context, "rename"),
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text("更新为当前筛选"),
+              onTap: () => Navigator.pop(context, "update"),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text(
+                "删除",
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () => Navigator.pop(context, "delete"),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (action == null) return;
+
+    if (action == "rename") {
+      final c = TextEditingController(text: preset["name"]);
+
+      final name = await showDialog<String>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("重命名"),
+          content: TextField(controller: c),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("取消"),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, c.text.trim()),
+              child: const Text("保存"),
+            ),
+          ],
+        ),
+      );
+
+      if (name != null && name.isNotEmpty) {
+        await db.renamePreset(id: preset["id"], name: name);
+      }
+    }
+
+    if (action == "update") {
+      await db.updatePreset(
+        id: preset["id"],
+        categories: selectedCategories,
+        brands: selectedBrands,
+        ranges: selectedRanges,
+      );
+    }
+
+    if (action == "delete") {
+      await db.deletePreset(preset["id"]);
+    }
+
+    presets = await db.getPresets();
+    setState(() {});
   }
 
   void filterFoods() {
@@ -489,7 +628,73 @@ class _WheelPageState extends State<WheelPage>
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  const Text(
+                    "预设方案",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: createPreset,
+                    icon: const Icon(Icons.add, size: 22),
+                  ),
+                ],
+              ),
+
+              SizedBox(
+                height: 58,
+                child: presets.isEmpty
+                    ? const Center(
+                  child: Text(
+                    "点击 + 保存当前筛选方案",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
+                    : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: presets.length,
+                  separatorBuilder: (_, _) =>
+                  const SizedBox(width: 10),
+                  itemBuilder: (_, i) {
+                    final preset = presets[i];
+
+                    return GestureDetector(
+                      onTap: () => applyPreset(preset),
+                      onLongPress: () => presetMenu(preset),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.bookmark, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              preset["name"],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
               Expanded(
                 child: Center(
                   child: Stack(

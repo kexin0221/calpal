@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -19,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -70,6 +71,16 @@ class DatabaseHelper {
         calories INTEGER NOT NULL
       )
     """);
+
+    await db.execute("""
+      CREATE TABLE presets(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        categories TEXT NOT NULL,
+        brands TEXT NOT NULL,
+        ranges TEXT NOT NULL
+      )
+""");
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -118,6 +129,18 @@ class DatabaseHelper {
       await db.execute(
         "ALTER TABLE brands ADD COLUMN isTop INTEGER DEFAULT 0",
       );
+    }
+
+    if (oldVersion < 6) {
+      await db.execute("""
+        CREATE TABLE presets(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          categories TEXT NOT NULL,
+          brands TEXT NOT NULL,
+          ranges TEXT NOT NULL
+        )
+  """);
     }
   }
 
@@ -389,6 +412,84 @@ class DatabaseHelper {
     }
 
     await batch.commit(noResult: true);
+  }
+
+  //================ 预设方案 =================//
+
+  Future<List<Map<String, dynamic>>> getPresets() async {
+    final db = await database;
+
+    return await db.query(
+      "presets",
+      orderBy: "id DESC",
+    );
+  }
+
+  Future<int> addPreset({
+    required String name,
+    required Set<String> categories,
+    required Set<int> brands,
+    required Set<String> ranges,
+  }) async {
+    final db = await database;
+
+    return await db.insert("presets", {
+      "name": name,
+      "categories": jsonEncode(categories.toList()),
+      "brands": jsonEncode(brands.toList()),
+      "ranges": jsonEncode(ranges.toList()),
+    });
+  }
+
+  Future<void> renamePreset({
+    required int id,
+    required String name,
+  }) async {
+    final db = await database;
+
+    await db.update(
+      "presets",
+      {"name": name},
+      where: "id=?",
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> updatePreset({
+    required int id,
+    required Set<String> categories,
+    required Set<int> brands,
+    required Set<String> ranges,
+  }) async {
+    final db = await database;
+
+    await db.update(
+      "presets",
+      {
+        "categories": jsonEncode(categories.toList()),
+        "brands": jsonEncode(brands.toList()),
+        "ranges": jsonEncode(ranges.toList()),
+      },
+      where: "id=?",
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deletePreset(int id) async {
+    final db = await database;
+
+    await db.delete(
+      "presets",
+      where: "id=?",
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> insertPresetRaw(
+      Map<String, dynamic> data,
+      ) async {
+    final db = await database;
+    await db.insert("presets", data);
   }
 
   //================ 数据同步 =================//
