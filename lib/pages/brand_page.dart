@@ -55,8 +55,8 @@ class _BrandPageState extends State<BrandPage> {
   }
 
   Color calorieColor(int calories) {
-    if (calories < 300) return const Color(0xFF22C55E);
-    if (calories < 400) return const Color(0xFFF59E0B);
+    if (calories < 400) return const Color(0xFF22C55E);
+    if (calories < 500) return const Color(0xFFF59E0B);
     return const Color(0xFFEF4444);
   }
 
@@ -74,14 +74,27 @@ class _BrandPageState extends State<BrandPage> {
     if (selectedFilters.isNotEmpty) {
       displayFoods = displayFoods.where((food) {
         final c = food["calories"] as int;
-        if (selectedFilters.contains("0-300") && c < 300) return true;
-        if (selectedFilters.contains("300-400") && c >= 300 && c < 400) {
+
+        if (selectedFilters.contains("0-400") && c < 400) {
           return true;
         }
-        if (selectedFilters.contains("400-500") && c >= 400 && c < 500) {
+
+        if (selectedFilters.contains("400-500") &&
+            c >= 400 &&
+            c < 500) {
           return true;
         }
-        if (selectedFilters.contains("500+") && c >= 500) return true;
+
+        if (selectedFilters.contains("500-600") &&
+            c >= 500 &&
+            c < 600) {
+          return true;
+        }
+
+        if (selectedFilters.contains("600+") && c >= 600) {
+          return true;
+        }
+
         return false;
       }).toList();
     }
@@ -293,7 +306,8 @@ class _BrandPageState extends State<BrandPage> {
                 child: const Text("取消"),
               ),
               FilledButton(
-                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                onPressed: () =>
+                    Navigator.pop(context, controller.text.trim()),
                 child: const Text("保存"),
               ),
             ],
@@ -317,7 +331,8 @@ class _BrandPageState extends State<BrandPage> {
           AlertDialog(
             title: const Text("删除品牌"),
             content: Text(
-                "确定删除「${widget.brandName}」吗？\n该品牌下所有产品都会删除。"),
+              "确定删除「${widget.brandName}」吗？\n该品牌下所有产品都会删除。",
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -376,13 +391,15 @@ class _BrandPageState extends State<BrandPage> {
                       const Text(
                         "热量筛选",
                         style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 20),
-                      item("0-300"),
-                      item("300-400"),
+                      item("0-400"),
                       item("400-500"),
-                      item("500+"),
+                      item("500-600"),
+                      item("600+"),
                       const SizedBox(height: 20),
                       Row(
                         children: [
@@ -491,8 +508,9 @@ class _BrandPageState extends State<BrandPage> {
                   child: Row(
                     children: [
                       Icon(
-                        isTop ? Icons.vertical_align_bottom : Icons
-                            .push_pin_outlined,
+                        isTop
+                            ? Icons.vertical_align_bottom
+                            : Icons.push_pin_outlined,
                       ),
                       SizedBox(width: 10),
                       Text(
@@ -517,7 +535,10 @@ class _BrandPageState extends State<BrandPage> {
                     children: [
                       Icon(Icons.delete_outline, color: Colors.red),
                       SizedBox(width: 10),
-                      Text("删除品牌", style: TextStyle(color: Colors.red)),
+                      Text(
+                        "删除品牌",
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ],
                   ),
                 ),
@@ -608,7 +629,10 @@ class _BrandPageState extends State<BrandPage> {
             Expanded(
               child: displayFoods.isEmpty
                   ? const Center(
-                child: Text("暂无产品", style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  "暂无产品",
+                  style: TextStyle(color: Colors.grey),
+                ),
               )
                   : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -669,14 +693,16 @@ class _BrandPageState extends State<BrandPage> {
                               ),
                             ),
                             Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   "${food["calories"]}",
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: calorieColor(food["calories"]),
+                                    color:
+                                    calorieColor(food["calories"]),
                                   ),
                                 ),
                                 const Text(

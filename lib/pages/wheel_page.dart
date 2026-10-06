@@ -229,18 +229,25 @@ class _WheelPageState extends State<WheelPage>
       if (selectedRanges.isNotEmpty) {
         bool ok = false;
 
-        if (selectedRanges.contains("0-300") && c < 300) ok = true;
-        if (selectedRanges.contains("300-400") &&
-            c >= 300 &&
-            c < 400) {
+        if (selectedRanges.contains("0-400") && c < 400) {
           ok = true;
         }
+
         if (selectedRanges.contains("400-500") &&
             c >= 400 &&
             c < 500) {
           ok = true;
         }
-        if (selectedRanges.contains("500+") && c >= 500) ok = true;
+
+        if (selectedRanges.contains("500-600") &&
+            c >= 500 &&
+            c < 600) {
+          ok = true;
+        }
+
+        if (selectedRanges.contains("600+") && c >= 600) {
+          ok = true;
+        }
 
         if (!ok) return false;
       }
@@ -310,6 +317,7 @@ class _WheelPageState extends State<WheelPage>
     setState(() => pointerOffset = 8);
     await Future.delayed(const Duration(milliseconds: 70));
     setState(() => pointerOffset = 0);
+
     final food = wheelFoods[winner];
 
     final brand = brands.firstWhere(
@@ -336,7 +344,7 @@ class _WheelPageState extends State<WheelPage>
   }
 
   Future<void> chooseCategoryBrand() async {
-    if (categories.isEmpty) return; // 防止空数据
+    if (categories.isEmpty) return;
 
     String currentCategory = selectedCategories.isEmpty
         ? categories.first["name"]
@@ -457,9 +465,11 @@ class _WheelPageState extends State<WheelPage>
                           selectedBrands = tempBrands;
 
                           selectedCategories = tempBrands
-                              .map((id) => brands.firstWhere(
-                                (e) => e["id"] == id,
-                          )["category"] as String)
+                              .map(
+                                (id) => brands.firstWhere(
+                                  (e) => e["id"] == id,
+                            )["category"] as String,
+                          )
                               .toSet();
 
                           Navigator.pop(context);
@@ -482,10 +492,10 @@ class _WheelPageState extends State<WheelPage>
     final temp = Set<String>.from(selectedRanges);
 
     const ranges = [
-      "0-300",
-      "300-400",
+      "0-400",
       "400-500",
-      "500+",
+      "500-600",
+      "600+",
     ];
 
     await showModalBottomSheet(
@@ -578,8 +588,10 @@ class _WheelPageState extends State<WheelPage>
                           mainAxisAlignment:
                           MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.restaurant_menu,
-                                size: 18),
+                            const Icon(
+                              Icons.restaurant_menu,
+                              size: 18,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               selectedBrands.isEmpty
@@ -629,7 +641,6 @@ class _WheelPageState extends State<WheelPage>
                 ],
               ),
               const SizedBox(height: 16),
-
               Row(
                 children: [
                   const Text(
@@ -646,7 +657,6 @@ class _WheelPageState extends State<WheelPage>
                   ),
                 ],
               ),
-
               SizedBox(
                 height: 58,
                 child: presets.isEmpty
@@ -676,11 +686,15 @@ class _WheelPageState extends State<WheelPage>
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius:
+                          BorderRadius.circular(18),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.bookmark, size: 16),
+                            const Icon(
+                              Icons.bookmark,
+                              size: 16,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               preset["name"],
@@ -710,9 +724,14 @@ class _WheelPageState extends State<WheelPage>
                       Positioned(
                         top: 0,
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 90),
+                          duration:
+                          const Duration(milliseconds: 90),
                           curve: Curves.easeOut,
-                          transform: Matrix4.translationValues(0, pointerOffset, 0),
+                          transform: Matrix4.translationValues(
+                            0,
+                            pointerOffset,
+                            0,
+                          ),
                           child: const Icon(
                             Icons.arrow_drop_down,
                             size: 42,
@@ -731,7 +750,8 @@ class _WheelPageState extends State<WheelPage>
                           ),
                           alignment: Alignment.center,
                           child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
+                            duration:
+                            const Duration(milliseconds: 200),
                             child: Text(
                               spinning ? "..." : "GO",
                               key: ValueKey(spinning),
@@ -872,7 +892,10 @@ class WheelPainter extends CustomPainter {
 
       tp.paint(
         canvas,
-        Offset(center.dx - tp.width / 2, center.dy - tp.height / 2),
+        Offset(
+          center.dx - tp.width / 2,
+          center.dy - tp.height / 2,
+        ),
       );
       return;
     }
