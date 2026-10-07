@@ -375,7 +375,7 @@ class _WheelPageState extends State<WheelPage>
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
@@ -510,7 +510,7 @@ class _WheelPageState extends State<WheelPage>
                                     decoration:
                                     BoxDecoration(
                                       color: selected
-                                          ? Colors.black
+                                          ? Theme.of(context).colorScheme.primary
                                           : Colors.transparent,
                                       borderRadius:
                                       BorderRadius.circular(
@@ -528,8 +528,8 @@ class _WheelPageState extends State<WheelPage>
                                             fontWeight:
                                             FontWeight.w600,
                                             color: selected
-                                                ? Colors.white
-                                                : Colors.black,
+                                                ? Theme.of(context).colorScheme.onPrimary
+                                                : Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 3),
@@ -538,8 +538,8 @@ class _WheelPageState extends State<WheelPage>
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: selected
-                                                ? Colors.white70
-                                                : Colors.grey,
+                                                ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70)
+                                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                           ),
                                         ),
                                       ],
@@ -935,7 +935,7 @@ class _WheelPageState extends State<WheelPage>
                           Container(
                             width: 96,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: ListView.builder(
@@ -1001,7 +1001,7 @@ class _WheelPageState extends State<WheelPage>
                                     "${currentCategory}_${b["id"]}",
                                   ),
                                   value: tempBrands.contains(b["id"]),
-                                  activeColor: Colors.black,
+                                  activeColor: Theme.of(context).colorScheme.primary,
                                   title: Opacity(
                                     opacity: disabled ? 0.35 : 1,
                                     child: Text(b["name"]),
@@ -1031,7 +1031,7 @@ class _WheelPageState extends State<WheelPage>
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                         ),
                         onPressed: () {
                           selectedBrands = tempBrands;
@@ -1173,7 +1173,7 @@ class _WheelPageState extends State<WheelPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
-      const Color(0xFFF5F5F7),
+      Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
