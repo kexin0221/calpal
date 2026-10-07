@@ -45,7 +45,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "添加品牌",
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
