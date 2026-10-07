@@ -147,7 +147,7 @@ class _WheelPageState extends State<WheelPage>
   Future<void> presetMenu(Map<String, dynamic> preset) async {
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(24),
@@ -445,7 +445,7 @@ class _WheelPageState extends State<WheelPage>
                     Text(
                       "已选择 $selectedCount / $totalCount",
                       style: const TextStyle(
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                         fontSize: 13,
                       ),
                     ),
@@ -460,7 +460,7 @@ class _WheelPageState extends State<WheelPage>
                           Container(
                             width: 105,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                               borderRadius:
                               BorderRadius.circular(18),
                             ),
@@ -711,7 +711,7 @@ class _WheelPageState extends State<WheelPage>
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           minimumSize:
                           const Size.fromHeight(48),
                         ),
@@ -1587,7 +1587,7 @@ class _WheelPageState extends State<WheelPage>
                 ),
                 decoration:
                 BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius:
                   BorderRadius
                       .circular(
@@ -1702,7 +1702,7 @@ class WheelPainter extends CustomPainter {
 
     final divider = Paint()
       ..color =
-      const Color(0xFFD1D5DB)
+      Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3C) : const Color(0xFFD1D5DB)
       ..strokeWidth = 1;
 
     final outline = Paint()
@@ -1720,7 +1720,7 @@ class WheelPainter extends CustomPainter {
     );
 
     if (foods.isEmpty) {
-      fill.color = Colors.white;
+      fill.color = Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white;
 
       canvas.drawCircle(
         center,
@@ -1739,7 +1739,7 @@ class WheelPainter extends CustomPainter {
           text: "暂无产品",
           style: TextStyle(
             fontSize: 18,
-            color: Colors.black54,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .54),
             fontWeight:
             FontWeight.w600,
           ),
@@ -1834,7 +1834,7 @@ class WheelPainter extends CustomPainter {
             height: 1.05,
             fontWeight:
             FontWeight.w700,
-            color: Colors.black,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
           ),
         ),
         textAlign:
