@@ -395,7 +395,7 @@ class _BrandPageState extends State<BrandPage> {
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -407,7 +407,7 @@ class _BrandPageState extends State<BrandPage> {
 
                 return CheckboxListTile(
                   value: checked,
-                  activeColor: Colors.black,
+                  activeColor: Theme.of(context).colorScheme.primary,
                   title: Text(label),
                   controlAffinity: ListTileControlAffinity.leading,
                   onChanged: (_) {
@@ -490,7 +490,7 @@ class _BrandPageState extends State<BrandPage> {
         Navigator.pop(context, hasChanged);
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F7),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           centerTitle: true,
           title: Text(widget.brandName),
@@ -603,7 +603,7 @@ class _BrandPageState extends State<BrandPage> {
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         borderRadius: BorderRadius.circular(22),
                       ),
                       child: TextField(
@@ -678,7 +678,7 @@ class _BrandPageState extends State<BrandPage> {
                   ? const Center(
                 child: Text(
                   "暂无产品",
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
                 ),
               )
                   : ListView.builder(
@@ -698,7 +698,7 @@ class _BrandPageState extends State<BrandPage> {
                           SlidableAction(
                             onPressed: (_) => editFood(food),
                             backgroundColor: const Color(0xFF2D2D2D),
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             icon: Icons.edit_outlined,
                             label: "编辑",
                             borderRadius: const BorderRadius.only(
@@ -756,7 +756,7 @@ class _BrandPageState extends State<BrandPage> {
                                   "kcal",
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                   ),
                                 ),
                               ],
