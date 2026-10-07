@@ -11,7 +11,7 @@ class BottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  Widget navItem({
+  Widget navItem(BuildContext context, {
     required IconData icon,
     required String text,
     required bool selected,
@@ -71,6 +71,7 @@ class BottomNav extends StatelessWidget {
           child: Row(
             children: [
               navItem(
+                context,
                 icon: Icons.menu_book_rounded,
                 text: "热量库",
                 selected: index == 0,
