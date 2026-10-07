@@ -1419,8 +1419,9 @@ class _WheelPageState extends State<WheelPage>
                           ),
                           painter:
                           WheelPainter(
-                            wheelFoods,
-                          ),
+                             wheelFoods,
+                             isDark: Theme.of(context).brightness == Brightness.dark,
+                           ),
                         ),
                       ),
 
