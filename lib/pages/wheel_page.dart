@@ -623,7 +623,7 @@ class _WheelPageState extends State<WheelPage>
                                     child: Text(
                                       "暂无产品",
                                       style: TextStyle(
-                                        color: Colors.grey,
+                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                       ),
                                     ),
                                   )
@@ -650,8 +650,7 @@ class _WheelPageState extends State<WheelPage>
                                             .contains(
                                           foodId,
                                         ),
-                                        activeColor:
-                                        Colors.black,
+                                        activeColor: Theme.of(context).colorScheme.primary,
                                         contentPadding:
                                         EdgeInsets
                                             .zero,
@@ -1200,8 +1199,7 @@ class _WheelPageState extends State<WheelPage>
                         height: 46,
                         decoration:
                         BoxDecoration(
-                          color:
-                          Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1248,8 +1246,7 @@ class _WheelPageState extends State<WheelPage>
                         height: 46,
                         decoration:
                         BoxDecoration(
-                          color:
-                          Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1323,8 +1320,7 @@ class _WheelPageState extends State<WheelPage>
                   child: Text(
                     "点击 + 保存当前筛选方案",
                     style: TextStyle(
-                      color:
-                      Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       fontSize: 12,
                     ),
                   ),
@@ -1448,8 +1444,7 @@ class _WheelPageState extends State<WheelPage>
                             Icons
                                 .arrow_drop_down,
                             size: 42,
-                            color:
-                            Colors.black,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -1464,8 +1459,7 @@ class _WheelPageState extends State<WheelPage>
                           height: 74,
                           decoration:
                           const BoxDecoration(
-                            color:
-                            Colors.black,
+                            color: Theme.of(context).colorScheme.primary,
                             shape:
                             BoxShape
                                 .circle,
@@ -1516,7 +1510,7 @@ class _WheelPageState extends State<WheelPage>
                     "共 ${candidates.length} 个候选产品",
                     style:
                     const TextStyle(
-                      color: Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       fontSize: 12,
                     ),
                   ),
@@ -1535,8 +1529,7 @@ class _WheelPageState extends State<WheelPage>
                       ),
                       decoration:
                       BoxDecoration(
-                        color:
-                        Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius:
                         BorderRadius
                             .circular(
