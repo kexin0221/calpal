@@ -43,7 +43,7 @@ class BottomNav extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : Colors.black54,
+                  color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                 ),
               )
             ],
@@ -78,12 +78,14 @@ class BottomNav extends StatelessWidget {
                 onPressed: () => onTap(0),
               ),
               navItem(
+                context,
                 icon: Icons.add_circle_outline_rounded,
                 text: "品牌",
                 selected: index == 1,
                 onPressed: () => onTap(1),
               ),
               navItem(
+                context,
                 icon: Icons.casino_outlined,
                 text: "转盘",
                 selected: index == 2,
