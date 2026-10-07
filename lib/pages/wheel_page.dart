@@ -962,7 +962,7 @@ class _WheelPageState extends State<WheelPage>
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
                                         color: selected
-                                            ? Colors.black
+                                            ? Theme.of(context).colorScheme.primary
                                             : Colors.transparent,
                                         borderRadius:
                                             BorderRadius.circular(14),
@@ -974,8 +974,8 @@ class _WheelPageState extends State<WheelPage>
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: selected
-                                              ? Colors.white
-                                              : Colors.black,
+                                              ? Theme.of(context).colorScheme.onPrimary
+                                              : Theme.of(context).colorScheme.onSurface,
                                         ),
                                       ),
                                     ),
@@ -1099,7 +1099,7 @@ class _WheelPageState extends State<WheelPage>
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
