@@ -626,7 +626,7 @@ class _BrandPageState extends State<BrandPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
@@ -647,7 +647,7 @@ class _BrandPageState extends State<BrandPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
@@ -665,9 +665,9 @@ class _BrandPageState extends State<BrandPage> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "注：$brandRemark",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF9CA3AF),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       height: 1.5,
                     ),
                   ),
@@ -725,7 +725,7 @@ class _BrandPageState extends State<BrandPage> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Row(

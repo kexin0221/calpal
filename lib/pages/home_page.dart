@@ -324,7 +324,7 @@ class _HomePageState extends State<HomePage> {
                           margin: const EdgeInsets.only(right: 14, bottom: 12),
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(28),
                           ),
                           child: brands.isEmpty
@@ -332,7 +332,7 @@ class _HomePageState extends State<HomePage> {
                                   child: Text(
                                     "暂无品牌\n点击下方 + 添加",
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.grey),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
                                   ),
                                 )
                               : ListView.builder(
@@ -345,7 +345,7 @@ class _HomePageState extends State<HomePage> {
                                         bottom: 10,
                                       ),
                                       child: Material(
-                                        color: const Color(0xffFAFAFA),
+                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(18),
                                         child: InkWell(
                                           borderRadius: BorderRadius.circular(
@@ -411,9 +411,9 @@ class _HomePageState extends State<HomePage> {
                                                     ],
                                                   ),
                                                 ),
-                                                const Icon(
+                                                Icon(
                                                   Icons.chevron_right,
-                                                  color: Colors.grey,
+                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                                 ),
                                               ],
                                             ),

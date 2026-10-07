@@ -375,7 +375,7 @@ class _WheelPageState extends State<WheelPage>
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
@@ -510,7 +510,7 @@ class _WheelPageState extends State<WheelPage>
                                     decoration:
                                     BoxDecoration(
                                       color: selected
-                                          ? Colors.black
+                                          ? Theme.of(context).colorScheme.primary
                                           : Colors.transparent,
                                       borderRadius:
                                       BorderRadius.circular(
@@ -528,8 +528,8 @@ class _WheelPageState extends State<WheelPage>
                                             fontWeight:
                                             FontWeight.w600,
                                             color: selected
-                                                ? Colors.white
-                                                : Colors.black,
+                                                ? Theme.of(context).colorScheme.onPrimary
+                                                : Theme.of(context).colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 3),
@@ -538,8 +538,8 @@ class _WheelPageState extends State<WheelPage>
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: selected
-                                                ? Colors.white70
-                                                : Colors.grey,
+                                                ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70)
+                                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                           ),
                                         ),
                                       ],
@@ -619,11 +619,11 @@ class _WheelPageState extends State<WheelPage>
 
                                 Expanded(
                                   child: visibleFoods.isEmpty
-                                      ? const Center(
+                                      ? Center(
                                     child: Text(
                                       "暂无产品",
                                       style: TextStyle(
-                                        color: Colors.grey,
+                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                       ),
                                     ),
                                   )
@@ -650,8 +650,7 @@ class _WheelPageState extends State<WheelPage>
                                             .contains(
                                           foodId,
                                         ),
-                                        activeColor:
-                                        Colors.black,
+                                        activeColor: Theme.of(context).colorScheme.primary,
                                         contentPadding:
                                         EdgeInsets
                                             .zero,
@@ -866,7 +865,7 @@ class _WheelPageState extends State<WheelPage>
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
@@ -935,7 +934,7 @@ class _WheelPageState extends State<WheelPage>
                           Container(
                             width: 96,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: ListView.builder(
@@ -962,7 +961,7 @@ class _WheelPageState extends State<WheelPage>
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
                                         color: selected
-                                            ? Colors.black
+                                            ? Theme.of(context).colorScheme.primary
                                             : Colors.transparent,
                                         borderRadius:
                                             BorderRadius.circular(14),
@@ -974,8 +973,8 @@ class _WheelPageState extends State<WheelPage>
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: selected
-                                              ? Colors.white
-                                              : Colors.black,
+                                              ? Theme.of(context).colorScheme.onPrimary
+                                              : Theme.of(context).colorScheme.onSurface,
                                         ),
                                       ),
                                     ),
@@ -1001,7 +1000,7 @@ class _WheelPageState extends State<WheelPage>
                                     "${currentCategory}_${b["id"]}",
                                   ),
                                   value: tempBrands.contains(b["id"]),
-                                  activeColor: Colors.black,
+                                  activeColor: Theme.of(context).colorScheme.primary,
                                   title: Opacity(
                                     opacity: disabled ? 0.35 : 1,
                                     child: Text(b["name"]),
@@ -1031,7 +1030,7 @@ class _WheelPageState extends State<WheelPage>
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                         ),
                         onPressed: () {
                           selectedBrands = tempBrands;
@@ -1099,7 +1098,7 @@ class _WheelPageState extends State<WheelPage>
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
@@ -1127,7 +1126,7 @@ class _WheelPageState extends State<WheelPage>
                     ...ranges.map((r) {
                       return CheckboxListTile(
                         value: temp.contains(r),
-                        activeColor: Colors.black,
+                        activeColor: Theme.of(context).colorScheme.primary,
                         title: Text(r),
                         onChanged: (_) {
                           setSheet(() {
@@ -1145,7 +1144,7 @@ class _WheelPageState extends State<WheelPage>
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                         ),
                         onPressed: () {
                           selectedRanges = temp;
@@ -1173,7 +1172,7 @@ class _WheelPageState extends State<WheelPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
-      const Color(0xFFF5F5F7),
+      Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -1200,8 +1199,7 @@ class _WheelPageState extends State<WheelPage>
                         height: 46,
                         decoration:
                         BoxDecoration(
-                          color:
-                          Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1248,8 +1246,7 @@ class _WheelPageState extends State<WheelPage>
                         height: 46,
                         decoration:
                         BoxDecoration(
-                          color:
-                          Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1319,12 +1316,11 @@ class _WheelPageState extends State<WheelPage>
               SizedBox(
                 height: 58,
                 child: presets.isEmpty
-                    ? const Center(
+                    ? Center(
                   child: Text(
                     "点击 + 保存当前筛选方案",
                     style: TextStyle(
-                      color:
-                      Colors.grey,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       fontSize: 12,
                     ),
                   ),
@@ -1444,12 +1440,11 @@ class _WheelPageState extends State<WheelPage>
                             0,
                           ),
                           child:
-                          const Icon(
+                          Icon(
                             Icons
                                 .arrow_drop_down,
                             size: 42,
-                            color:
-                            Colors.black,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -1463,9 +1458,8 @@ class _WheelPageState extends State<WheelPage>
                           width: 74,
                           height: 74,
                           decoration:
-                          const BoxDecoration(
-                            color:
-                            Colors.black,
+                          BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
                             shape:
                             BoxShape
                                 .circle,
@@ -1515,8 +1509,8 @@ class _WheelPageState extends State<WheelPage>
                   Text(
                     "共 ${candidates.length} 个候选产品",
                     style:
-                    const TextStyle(
-                      color: Colors.grey,
+                    TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       fontSize: 12,
                     ),
                   ),
@@ -1535,8 +1529,7 @@ class _WheelPageState extends State<WheelPage>
                       ),
                       decoration:
                       BoxDecoration(
-                        color:
-                        Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius:
                         BorderRadius
                             .circular(
