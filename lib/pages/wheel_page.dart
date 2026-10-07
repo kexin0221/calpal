@@ -267,28 +267,55 @@ class _WheelPageState extends State<WheelPage>
 
       final c = food["calories"] as int;
 
-      // 转盘页保持原来的热量区间
+      final isDrinkMode = selectedBrands.isNotEmpty &&
+          selectedBrands.any(
+            (id) =>
+                brandMap[id]?['category'] == '饮品',
+          );
+
       if (selectedRanges.isNotEmpty) {
         bool ok = false;
 
-        if (selectedRanges.contains("0-300") && c < 300) {
-          ok = true;
-        }
+        if (isDrinkMode) {
+          if (selectedRanges.contains("0-150") && c < 150) {
+            ok = true;
+          }
 
-        if (selectedRanges.contains("300-400") &&
-            c >= 300 &&
-            c < 400) {
-          ok = true;
-        }
+          if (selectedRanges.contains("150-220") &&
+              c >= 150 &&
+              c < 220) {
+            ok = true;
+          }
 
-        if (selectedRanges.contains("400-500") &&
-            c >= 400 &&
-            c < 500) {
-          ok = true;
-        }
+          if (selectedRanges.contains("220-300") &&
+              c >= 220 &&
+              c < 300) {
+            ok = true;
+          }
 
-        if (selectedRanges.contains("500+") && c >= 500) {
-          ok = true;
+          if (selectedRanges.contains("300+") && c >= 300) {
+            ok = true;
+          }
+        } else {
+          if (selectedRanges.contains("0-300") && c < 300) {
+            ok = true;
+          }
+
+          if (selectedRanges.contains("300-400") &&
+              c >= 300 &&
+              c < 400) {
+            ok = true;
+          }
+
+          if (selectedRanges.contains("400-500") &&
+              c >= 400 &&
+              c < 500) {
+            ok = true;
+          }
+
+          if (selectedRanges.contains("500+") && c >= 500) {
+            ok = true;
+          }
         }
 
         if (!ok) return false;
@@ -834,8 +861,7 @@ class _WheelPageState extends State<WheelPage>
         ? categories.first["name"]
         : selectedCategories.first;
 
-    final tempBrands =
-    Set<int>.from(selectedBrands);
+    final tempBrands = Set<int>.from(selectedBrands);
 
     await showModalBottomSheet(
       context: context,
@@ -849,27 +875,55 @@ class _WheelPageState extends State<WheelPage>
       builder: (_) {
         return StatefulBuilder(
           builder: (context, setSheet) {
-            final visibleBrands =
-            brands.where((b) {
-              return b["category"] ==
-                  currentCategory;
+            final selectedDrinkBrand = tempBrands.any(
+              (id) => brands.firstWhere(
+                (b) => b["id"] == id,
+              )["category"] == "饮品",
+            );
+
+            final selectedNormalBrand = tempBrands.any(
+              (id) => brands.firstWhere(
+                (b) => b["id"] == id,
+              )["category"] != "饮品",
+            );
+
+            final selectedDrinkRange = selectedRanges.any(
+              (r) =>
+                  r == "0-150" ||
+                  r == "150-220" ||
+                  r == "220-300" ||
+                  r == "300+",
+            );
+
+            final selectedNormalRange = selectedRanges.any(
+              (r) =>
+                  r == "0-300" ||
+                  r == "300-400" ||
+                  r == "400-500" ||
+                  r == "500+",
+            );
+
+            final drinkLocked =
+                selectedNormalBrand || selectedNormalRange;
+            final normalLocked =
+                selectedDrinkBrand || selectedDrinkRange;
+
+            final visibleBrands = brands.where((b) {
+              return b["category"] == currentCategory;
             }).toList();
 
             return SizedBox(
               height:
-              MediaQuery.of(context).size.height *
-                  0.72,
+                  MediaQuery.of(context).size.height * 0.72,
               child: Padding(
-                padding:
-                const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     const Text(
                       "选择品牌",
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
@@ -880,72 +934,49 @@ class _WheelPageState extends State<WheelPage>
                         children: [
                           Container(
                             width: 96,
-                            decoration:
-                            BoxDecoration(
-                              color: const Color(
-                                0xFFF6F6F6,
-                              ),
-                              borderRadius:
-                              BorderRadius
-                                  .circular(18),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF6F6F6),
+                              borderRadius: BorderRadius.circular(18),
                             ),
-                            child:
-                            ListView.builder(
-                              itemCount:
-                              categories.length,
-                              itemBuilder:
-                                  (_, i) {
-                                final name =
-                                categories[
-                                i]["name"];
-
-                                final selected =
-                                    name ==
-                                        currentCategory;
+                            child: ListView.builder(
+                              itemCount: categories.length,
+                              itemBuilder: (_, i) {
+                                final name = categories[i]["name"];
+                                final selected = name == currentCategory;
+                                final disabled = name == "饮品"
+                                    ? drinkLocked
+                                    : normalLocked;
 
                                 return GestureDetector(
-                                  onTap: () {
-                                    setSheet(() {
-                                      currentCategory =
-                                          name;
-                                    });
-                                  },
-                                  child:
-                                  Container(
-                                    height: 50,
-                                    alignment:
-                                    Alignment
-                                        .center,
-                                    decoration:
-                                    BoxDecoration(
-                                      color: selected
-                                          ? Colors
-                                          .black
-                                          : Colors
-                                          .transparent,
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                        14,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      name,
-                                      textAlign:
-                                      TextAlign
-                                          .center,
-                                      style:
-                                      TextStyle(
-                                        fontSize:
-                                        13,
-                                        fontWeight:
-                                        FontWeight
-                                            .w600,
+                                  onTap: disabled
+                                      ? null
+                                      : () {
+                                          setSheet(() {
+                                            currentCategory = name;
+                                          });
+                                        },
+                                  child: Opacity(
+                                    opacity: disabled ? 0.35 : 1,
+                                    child: Container(
+                                      height: 50,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
                                         color: selected
-                                            ? Colors
-                                            .white
-                                            : Colors
-                                            .black,
+                                            ? Colors.black
+                                            : Colors.transparent,
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                      ),
+                                      child: Text(
+                                        name,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: selected
+                                              ? Colors.white
+                                              : Colors.black,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -958,42 +989,34 @@ class _WheelPageState extends State<WheelPage>
 
                           Expanded(
                             child: ListView(
-                              children:
-                              visibleBrands
-                                  .map((b) {
+                              children: visibleBrands.map((b) {
+                                final isDrinkBrand =
+                                    b["category"] == "饮品";
+                                final disabled = isDrinkBrand
+                                    ? drinkLocked
+                                    : normalLocked;
+
                                 return CheckboxListTile(
-                                  // 切换分类时重新创建 Checkbox，
-                                  // 避免出现取消勾选动画
                                   key: ValueKey(
                                     "${currentCategory}_${b["id"]}",
                                   ),
-                                  value:
-                                  tempBrands
-                                      .contains(
-                                    b["id"],
+                                  value: tempBrands.contains(b["id"]),
+                                  activeColor: Colors.black,
+                                  title: Opacity(
+                                    opacity: disabled ? 0.35 : 1,
+                                    child: Text(b["name"]),
                                   ),
-                                  activeColor:
-                                  Colors.black,
-                                  title:
-                                  Text(b["name"]),
                                   controlAffinity:
-                                  ListTileControlAffinity
-                                      .leading,
-                                  onChanged:
-                                      (_) {
-                                    setSheet(() {
-                                      tempBrands.contains(
-                                          b["id"])
-                                          ? tempBrands
-                                          .remove(
-                                        b["id"],
-                                      )
-                                          : tempBrands
-                                          .add(
-                                        b["id"],
-                                      );
-                                    });
-                                  },
+                                      ListTileControlAffinity.leading,
+                                  onChanged: disabled
+                                      ? null
+                                      : (_) {
+                                          setSheet(() {
+                                            tempBrands.contains(b["id"])
+                                                ? tempBrands.remove(b["id"])
+                                                : tempBrands.add(b["id"]);
+                                          });
+                                        },
                                 );
                               }).toList(),
                             ),
@@ -1005,39 +1028,27 @@ class _WheelPageState extends State<WheelPage>
                     const SizedBox(height: 12),
 
                     SizedBox(
-                      width:
-                      double.infinity,
+                      width: double.infinity,
                       child: FilledButton(
-                        style:
-                        FilledButton.styleFrom(
-                          backgroundColor:
-                          Colors.black,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.black,
                         ),
                         onPressed: () {
-                          selectedBrands =
-                              tempBrands;
+                          selectedBrands = tempBrands;
 
-                          selectedCategories =
-                              tempBrands
-                                  .map(
-                                    (id) =>
-                                brands.firstWhere(
-                                      (e) =>
-                                  e["id"] ==
-                                      id,
-                                )["category"]
-                                as String,
+                          selectedCategories = tempBrands
+                              .map(
+                                (id) => brands.firstWhere(
+                                  (e) => e["id"] == id,
+                                )["category"] as String,
                               )
-                                  .toSet();
+                              .toSet();
 
-                          Navigator.pop(
-                            context,
-                          );
+                          Navigator.pop(context);
 
                           filterFoods();
                         },
-                        child:
-                        const Text("完成"),
+                        child: const Text("完成"),
                       ),
                     ),
                   ],
@@ -1053,15 +1064,38 @@ class _WheelPageState extends State<WheelPage>
   // ==================== 热量区间 ====================
 
   Future<void> chooseRange() async {
-    final temp =
-    Set<String>.from(selectedRanges);
+    final temp = Set<String>.from(selectedRanges);
 
-    const ranges = [
-      "0-300",
-      "300-400",
-      "400-500",
-      "500+",
-    ];
+    final selectedDrinkBrand = selectedBrands.any(
+      (id) => brands.firstWhere(
+        (b) => b["id"] == id,
+      )["category"] == "饮品",
+    );
+
+    final selectedDrinkRange = selectedRanges.any(
+      (r) =>
+          r == "0-150" ||
+          r == "150-220" ||
+          r == "220-300" ||
+          r == "300+",
+    );
+
+    final isDrinkMode = selectedDrinkBrand ||
+        (selectedBrands.isEmpty && selectedDrinkRange);
+
+    final ranges = isDrinkMode
+        ? const [
+            "0-150",
+            "150-220",
+            "220-300",
+            "300+",
+          ]
+        : const [
+            "0-300",
+            "300-400",
+            "400-500",
+            "500+",
+          ];
 
     await showModalBottomSheet(
       context: context,
@@ -1076,18 +1110,15 @@ class _WheelPageState extends State<WheelPage>
           builder: (context, setSheet) {
             return SafeArea(
               child: Padding(
-                padding:
-                const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 child: Column(
-                  mainAxisSize:
-                  MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
                       "热量区间",
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
@@ -1095,10 +1126,8 @@ class _WheelPageState extends State<WheelPage>
 
                     ...ranges.map((r) {
                       return CheckboxListTile(
-                        value:
-                        temp.contains(r),
-                        activeColor:
-                        Colors.black,
+                        value: temp.contains(r),
+                        activeColor: Colors.black,
                         title: Text(r),
                         onChanged: (_) {
                           setSheet(() {
@@ -1113,26 +1142,19 @@ class _WheelPageState extends State<WheelPage>
                     const SizedBox(height: 10),
 
                     SizedBox(
-                      width:
-                      double.infinity,
+                      width: double.infinity,
                       child: FilledButton(
-                        style:
-                        FilledButton.styleFrom(
-                          backgroundColor:
-                          Colors.black,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.black,
                         ),
                         onPressed: () {
-                          selectedRanges =
-                              temp;
+                          selectedRanges = temp;
 
-                          Navigator.pop(
-                            context,
-                          );
+                          Navigator.pop(context);
 
                           filterFoods();
                         },
-                        child:
-                        const Text("完成"),
+                        child: const Text("完成"),
                       ),
                     ),
                   ],

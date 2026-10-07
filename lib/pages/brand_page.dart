@@ -55,6 +55,18 @@ class _BrandPageState extends State<BrandPage> {
   }
 
   Color calorieColor(int calories) {
+    if (widget.category == "饮品") {
+      if (calories < 150) {
+        return const Color(0xFF22C55E);
+      }
+
+      if (calories < 220) {
+        return const Color(0xFFF59E0B);
+      }
+
+      return const Color(0xFFEF4444);
+    }
+
     if (calories < 400) return const Color(0xFF22C55E);
     if (calories < 500) return const Color(0xFFF59E0B);
     return const Color(0xFFEF4444);
@@ -74,6 +86,30 @@ class _BrandPageState extends State<BrandPage> {
     if (selectedFilters.isNotEmpty) {
       displayFoods = displayFoods.where((food) {
         final c = food["calories"] as int;
+
+        if (widget.category == "饮品") {
+          if (selectedFilters.contains("0-150") && c < 150) {
+            return true;
+          }
+
+          if (selectedFilters.contains("150-220") &&
+              c >= 150 &&
+              c < 220) {
+            return true;
+          }
+
+          if (selectedFilters.contains("220-300") &&
+              c >= 220 &&
+              c < 300) {
+            return true;
+          }
+
+          if (selectedFilters.contains("300+") && c >= 300) {
+            return true;
+          }
+
+          return false;
+        }
 
         if (selectedFilters.contains("0-400") && c < 400) {
           return true;
@@ -382,6 +418,8 @@ class _BrandPageState extends State<BrandPage> {
                 );
               }
 
+              final isDrink = widget.category == "饮品";
+
               return SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -396,10 +434,19 @@ class _BrandPageState extends State<BrandPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      item("0-400"),
-                      item("400-500"),
-                      item("500-600"),
-                      item("600+"),
+
+                      if (isDrink) ...[
+                        item("0-150"),
+                        item("150-220"),
+                        item("220-300"),
+                        item("300+"),
+                      ] else ...[
+                        item("0-400"),
+                        item("400-500"),
+                        item("500-600"),
+                        item("600+"),
+                      ],
+
                       const SizedBox(height: 20),
                       Row(
                         children: [
