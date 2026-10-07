@@ -647,7 +647,7 @@ class _BrandPageState extends State<BrandPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
