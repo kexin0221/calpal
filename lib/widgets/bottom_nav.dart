@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 
 class BottomNav extends StatelessWidget {
   final int index;
@@ -27,7 +26,7 @@ class BottomNav extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? Theme.of(context as BuildContext).colorScheme.primary : Colors.transparent,
+            color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
@@ -36,7 +35,7 @@ class BottomNav extends StatelessWidget {
               Icon(
                 icon,
                 size: 22,
-                color: selected ? Theme.of(context as BuildContext).colorScheme.onPrimary : Theme.of(context as BuildContext).colorScheme.onSurface.withValues(alpha: .55),
+                color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
               ),
               const SizedBox(height: 3),
               Text(
