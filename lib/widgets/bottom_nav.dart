@@ -26,7 +26,7 @@ class BottomNav extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? Colors.black : Colors.transparent,
+            color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
@@ -35,7 +35,7 @@ class BottomNav extends StatelessWidget {
               Icon(
                 icon,
                 size: 22,
-                color: selected ? Colors.white : Colors.black54,
+                color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
               ),
               const SizedBox(height: 3),
               Text(
@@ -62,10 +62,10 @@ class BottomNav extends StatelessWidget {
         child: Container(
           height: 74,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.72),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.55),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
             ),
           ),
           child: Row(
