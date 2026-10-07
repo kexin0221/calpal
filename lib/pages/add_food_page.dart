@@ -58,7 +58,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F5F7),
         surfaceTintColor: Colors.transparent,
@@ -67,11 +67,11 @@ class _AddFoodPageState extends State<AddFoodPage> {
         title: const Text(
           "添加产品",
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -88,7 +88,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
               decoration: InputDecoration(
                 hintText: "",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide.none,
@@ -121,8 +121,8 @@ class _AddFoodPageState extends State<AddFoodPage> {
               child: ElevatedButton(
                 onPressed: saveFood,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(27),
                   ),
