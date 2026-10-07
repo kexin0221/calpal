@@ -22,10 +22,10 @@ class CalPal extends StatelessWidget {
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: isDark ? Colors.white : Colors.black,
-      onPrimary: isDark ? Colors.black : Colors.white,
-      secondary: isDark ? Colors.white : Colors.black,
-      onSecondary: isDark ? Colors.black : Colors.white,
+      primary: isDark ? const Color(0xff3A3A3C) : Colors.black,
+      onPrimary: isDark ? Colors.white : Colors.white,
+      secondary: isDark ? const Color(0xff3A3A3C) : Colors.black,
+      onSecondary: isDark ? Colors.white : Colors.white,
       error: Colors.red,
       onError: Colors.white,
       surface: surface,

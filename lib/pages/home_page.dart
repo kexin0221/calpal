@@ -328,7 +328,7 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: BorderRadius.circular(28),
                           ),
                           child: brands.isEmpty
-                              ? const Center(
+                              ? Center(
                                   child: Text(
                                     "暂无品牌\n点击下方 + 添加",
                                     textAlign: TextAlign.center,
@@ -345,7 +345,9 @@ class _HomePageState extends State<HomePage> {
                                         bottom: 10,
                                       ),
                                       child: Material(
-                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? const Color(0xff2C2C2E)
+                                            : Theme.of(context).colorScheme.surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(18),
                                         child: InkWell(
                                           borderRadius: BorderRadius.circular(

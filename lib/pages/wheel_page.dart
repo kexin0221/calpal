@@ -1360,9 +1360,9 @@ class _WheelPageState extends State<WheelPage>
                         ),
                         decoration:
                         BoxDecoration(
-                          color:
-                          Colors
-                              .white,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xff2C2C2E)
+                              : Colors.white,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1371,10 +1371,10 @@ class _WheelPageState extends State<WheelPage>
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons
-                                  .bookmark,
+                            Icon(
+                              Icons.bookmark,
                               size: 16,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             const SizedBox(
                               width: 6,
@@ -1382,11 +1382,9 @@ class _WheelPageState extends State<WheelPage>
                             Text(
                               preset[
                               "name"],
-                              style:
-                              const TextStyle(
-                                fontWeight:
-                                FontWeight
-                                    .w600,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ],
