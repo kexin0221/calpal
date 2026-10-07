@@ -1682,14 +1682,15 @@ class _WheelPageState extends State<WheelPage>
 
 class WheelPainter extends CustomPainter {
   final List<Map<String, dynamic>> foods;
+  final bool isDark;
 
-  WheelPainter(this.foods);
+  WheelPainter(
+    this.foods, {
+    required this.isDark,
+  });
 
   @override
-  void paint(
-      Canvas canvas,
-      Size size,
-      ) {
+  void paint(Canvas canvas, Size size) {
     final center = Offset(
       size.width / 2,
       size.height / 2,
@@ -1697,55 +1698,45 @@ class WheelPainter extends CustomPainter {
 
     final radius = size.width / 2;
 
-    final fill = Paint()
-      ..style = PaintingStyle.fill;
+    final fill = Paint()..style = PaintingStyle.fill;
 
     final divider = Paint()
-      ..color =
-      Theme.of(context).brightness == Brightness.dark ? const Color(0xFF3A3A3C) : const Color(0xFFD1D5DB)
+      ..color = isDark
+          ? const Color(0xFF3A3A3C)
+          : const Color(0xFFD1D5DB)
       ..strokeWidth = 1;
 
     final outline = Paint()
-      ..color = Colors.black
+      ..color = isDark ? Colors.white : Colors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
-    // 外圈阴影
     canvas.drawCircle(
       center,
       radius + 4,
-      Paint()
-        ..color =
-        const Color(0x14000000),
+      Paint()..color = isDark
+          ? const Color(0x33000000)
+          : const Color(0x14000000),
     );
 
     if (foods.isEmpty) {
-      fill.color = Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1C1C1E) : Colors.white;
+      fill.color = isDark
+          ? const Color(0xFF1C1C1E)
+          : Colors.white;
 
-      canvas.drawCircle(
-        center,
-        radius,
-        fill,
-      );
-
-      canvas.drawCircle(
-        center,
-        radius,
-        outline,
-      );
+      canvas.drawCircle(center, radius, fill);
+      canvas.drawCircle(center, radius, outline);
 
       final tp = TextPainter(
-        text: const TextSpan(
+        text: TextSpan(
           text: "暂无产品",
           style: TextStyle(
             fontSize: 18,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .54),
-            fontWeight:
-            FontWeight.w600,
+            color: isDark ? Colors.white70 : Colors.black54,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        textDirection:
-        TextDirection.ltr,
+        textDirection: TextDirection.ltr,
       )..layout();
 
       tp.paint(
@@ -1760,15 +1751,12 @@ class WheelPainter extends CustomPainter {
     }
 
     final count = foods.length;
+    final sweep = 2 * pi / count;
 
-    final sweep =
-        2 * pi / count;
-
-    // 扇区
     for (int i = 0; i < count; i++) {
       fill.color = i.isEven
-          ? Colors.white
-          : const Color(0xFFF5F5F5);
+          ? (isDark ? const Color(0xFF1C1C1E) : Colors.white)
+          : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF5F5F5));
 
       canvas.drawArc(
         Rect.fromCircle(
@@ -1782,68 +1770,44 @@ class WheelPainter extends CustomPainter {
       );
     }
 
-    // 分割线
     for (int i = 0; i < count; i++) {
-      final a =
-          -pi / 2 + i * sweep;
+      final a = -pi / 2 + i * sweep;
 
       canvas.drawLine(
         center,
         Offset(
-          center.dx +
-              cos(a) * radius,
-          center.dy +
-              sin(a) * radius,
+          center.dx + cos(a) * radius,
+          center.dy + sin(a) * radius,
         ),
         divider,
       );
     }
 
-    // 文字
     for (int i = 0; i < count; i++) {
-      final a = -pi / 2 +
-          i * sweep +
-          sweep / 2;
+      final a = -pi / 2 + i * sweep + sweep / 2;
 
-      final dx =
-          center.dx +
-              cos(a) * radius * 0.72;
-
-      final dy =
-          center.dy +
-              sin(a) * radius * 0.72;
+      final dx = center.dx + cos(a) * radius * 0.72;
+      final dy = center.dy + sin(a) * radius * 0.72;
 
       canvas.save();
-
       canvas.translate(dx, dy);
+      canvas.rotate(a + pi / 2);
 
-      canvas.rotate(
-        a + pi / 2,
-      );
-
-      final lines =
-      _split(
-        foods[i]["name"].toString(),
-      );
+      final lines = _split(foods[i]["name"].toString());
 
       final tp = TextPainter(
         text: TextSpan(
           text: lines.join("\n"),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             height: 1.05,
-            fontWeight:
-            FontWeight.w700,
-            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
-        textAlign:
-        TextAlign.center,
-        textDirection:
-        TextDirection.ltr,
-      )..layout(
-        maxWidth: 56,
-      );
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: 56);
 
       tp.paint(
         canvas,
@@ -1856,17 +1820,10 @@ class WheelPainter extends CustomPainter {
       canvas.restore();
     }
 
-    // 外框
-    canvas.drawCircle(
-      center,
-      radius,
-      outline,
-    );
+    canvas.drawCircle(center, radius, outline);
   }
 
-  List<String> _split(
-      String name,
-      ) {
+  List<String> _split(String name) {
     if (name.length <= 4) {
       return [name];
     }
@@ -1885,9 +1842,7 @@ class WheelPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-      covariant CustomPainter oldDelegate,
-      ) {
-    return true;
+  bool shouldRepaint(covariant WheelPainter oldDelegate) {
+    return oldDelegate.foods != foods || oldDelegate.isDark != isDark;
   }
 }
