@@ -80,7 +80,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
       ),
       child: ListTile(
@@ -90,8 +90,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         leading: CircleAvatar(
           radius: 22,
-          backgroundColor: const Color(0xffF5F5F7),
-          child: Icon(icon, color: Colors.black),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          child: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
         ),
         title: Text(
           title,
@@ -107,9 +107,9 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xffF5F5F7),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         centerTitle: true,
         title: const Text("设置"),
       ),
@@ -121,7 +121,7 @@ class _SettingsPageState extends State<SettingsPage> {
               const Text(
                 "数据同步",
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                   fontWeight: FontWeight.w600,
                 ),
               ),
