@@ -146,7 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
               const Text(
                 "管理",
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -170,7 +170,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
           if (loading)
             Container(
-              color: Colors.black26,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .16),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
