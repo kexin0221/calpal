@@ -866,7 +866,7 @@ class _WheelPageState extends State<WheelPage>
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(28),
@@ -1127,7 +1127,7 @@ class _WheelPageState extends State<WheelPage>
                     ...ranges.map((r) {
                       return CheckboxListTile(
                         value: temp.contains(r),
-                        activeColor: Colors.black,
+                        activeColor: Theme.of(context).colorScheme.primary,
                         title: Text(r),
                         onChanged: (_) {
                           setSheet(() {
@@ -1145,7 +1145,7 @@ class _WheelPageState extends State<WheelPage>
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                         ),
                         onPressed: () {
                           selectedRanges = temp;
