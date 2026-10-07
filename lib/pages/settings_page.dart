@@ -118,7 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListView(
             padding: const EdgeInsets.all(18),
             children: [
-              const Text(
+              Text(
                 "数据同步",
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
@@ -143,7 +143,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
               const SizedBox(height: 28),
 
-              const Text(
+              Text(
                 "管理",
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
