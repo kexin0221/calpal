@@ -328,7 +328,7 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: BorderRadius.circular(28),
                           ),
                           child: brands.isEmpty
-                              ? const Center(
+                              ? Center(
                                   child: Text(
                                     "暂无品牌\n点击下方 + 添加",
                                     textAlign: TextAlign.center,
