@@ -226,7 +226,7 @@ class _HomePageState extends State<HomePage> {
                             color: Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.settings,
                             color: Theme.of(context).colorScheme.onPrimary,
                           ),
@@ -300,7 +300,7 @@ class _HomePageState extends State<HomePage> {
                                         const SizedBox(width: 4),
                                         Text(
                                           "${brands.length}",
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70),
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
@@ -382,9 +382,9 @@ class _HomePageState extends State<HomePage> {
                                                       if ((brand["isTop"] ??
                                                               0) ==
                                                           1)
-                                                        const Padding(
+                                                        Padding(
                                                           padding:
-                                                              EdgeInsets.only(
+                                                              const EdgeInsets.only(
                                                                 right: 6,
                                                               ),
                                                           child: Icon(

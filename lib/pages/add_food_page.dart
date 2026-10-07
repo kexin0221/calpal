@@ -64,7 +64,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "添加产品",
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,

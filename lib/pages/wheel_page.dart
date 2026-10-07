@@ -444,7 +444,7 @@ class _WheelPageState extends State<WheelPage>
 
                     Text(
                       "已选择 $selectedCount / $totalCount",
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                         fontSize: 13,
                       ),
