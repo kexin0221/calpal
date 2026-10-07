@@ -170,7 +170,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       body: IndexedStack(
         index: bottomIndex == 2 ? 1 : 0,
@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
                         child: Container(
                           height: 48,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: TextField(
@@ -222,13 +222,13 @@ class _HomePageState extends State<HomePage> {
                         child: Container(
                           width: 48,
                           height: 48,
-                          decoration: const BoxDecoration(
-                            color: Colors.black,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.settings,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -246,7 +246,7 @@ class _HomePageState extends State<HomePage> {
                         width: 112,
                         margin: const EdgeInsets.only(left: 14, bottom: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(28),
                         ),
                         child: ListView.builder(
@@ -271,7 +271,7 @@ class _HomePageState extends State<HomePage> {
                                 height: 52,
                                 decoration: BoxDecoration(
                                   color: selected
-                                      ? Colors.black
+                                      ? Theme.of(context).colorScheme.primary
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -289,8 +289,8 @@ class _HomePageState extends State<HomePage> {
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: selected
-                                                ? Colors.white
-                                                : Colors.black87,
+                                                ? Theme.of(context).colorScheme.onPrimary
+                                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: .87),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
                                           ),
@@ -301,7 +301,7 @@ class _HomePageState extends State<HomePage> {
                                         Text(
                                           "${brands.length}",
                                           style: const TextStyle(
-                                            color: Colors.white70,
+                                            color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70),
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -390,7 +390,7 @@ class _HomePageState extends State<HomePage> {
                                                           child: Icon(
                                                             Icons.push_pin,
                                                             size: 14,
-                                                            color: Colors.grey,
+                                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                                                           ),
                                                         ),
 
@@ -443,7 +443,7 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           height: 72,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: .92),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: .92),
             borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
@@ -477,18 +477,18 @@ class _HomePageState extends State<HomePage> {
         width: 108,
         height: 54,
         decoration: BoxDecoration(
-          color: selected ? Colors.black : Colors.transparent,
+          color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: selected ? Colors.white : Colors.grey),
+            Icon(icon, color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
             const SizedBox(height: 2),
             Text(
               text,
               style: TextStyle(
-                color: selected ? Colors.white : Colors.grey,
+                color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -505,11 +505,11 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         width: 58,
         height: 58,
-        decoration: const BoxDecoration(
-          color: Colors.black,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: 30),
       ),
     );
   }
