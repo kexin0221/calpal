@@ -665,7 +665,7 @@ class _BrandPageState extends State<BrandPage> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "注：$brandRemark",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       height: 1.5,
@@ -675,7 +675,7 @@ class _BrandPageState extends State<BrandPage> {
               ),
             Expanded(
               child: displayFoods.isEmpty
-                  ? const Center(
+                  ? Center(
                 child: Text(
                   "暂无产品",
                   style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
@@ -752,7 +752,7 @@ class _BrandPageState extends State<BrandPage> {
                                     calorieColor(food["calories"]),
                                   ),
                                 ),
-                                const Text(
+                                Text(
                                   "kcal",
                                   style: TextStyle(
                                     fontSize: 11,
