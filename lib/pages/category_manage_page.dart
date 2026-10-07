@@ -182,7 +182,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                     leading:
                     ReorderableDragStartListener(
                       index: index,
-                      child: const Icon(
+                      child: Icon(
                         Icons.drag_handle,
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       ),
