@@ -141,7 +141,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xffF5F5F5),
         surfaceTintColor: Colors.transparent,
@@ -169,7 +169,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                   margin:
                   const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius:
                     BorderRadius.circular(18),
                   ),
@@ -184,7 +184,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                       index: index,
                       child: const Icon(
                         Icons.drag_handle,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       ),
                     ),
                     title: Text(
@@ -229,8 +229,8 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                 icon: const Icon(Icons.add),
                 label: const Text("新增分类"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius:
                     BorderRadius.circular(28),
