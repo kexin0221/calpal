@@ -40,7 +40,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xffF5F5F5),
         elevation: 0,
@@ -48,11 +48,11 @@ class _AddBrandPageState extends State<AddBrandPage> {
         title: const Text(
           "添加品牌",
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
       ),
       body: Padding(
         padding: const EdgeInsets.all(22),
@@ -74,7 +74,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
               decoration: InputDecoration(
                 hintText: "",
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 18,
                   vertical: 16,
@@ -105,7 +105,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
                 vertical: 16,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
@@ -125,7 +125,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
               child: ElevatedButton(
                 onPressed: saveBrand,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
