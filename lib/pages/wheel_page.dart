@@ -1316,7 +1316,7 @@ class _WheelPageState extends State<WheelPage>
               SizedBox(
                 height: 58,
                 child: presets.isEmpty
-                    ? const Center(
+                    ? Center(
                   child: Text(
                     "点击 + 保存当前筛选方案",
                     style: TextStyle(
@@ -1458,7 +1458,7 @@ class _WheelPageState extends State<WheelPage>
                           width: 74,
                           height: 74,
                           decoration:
-                          const BoxDecoration(
+                          BoxDecoration(
                             color: Theme.of(context).colorScheme.primary,
                             shape:
                             BoxShape
