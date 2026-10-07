@@ -444,7 +444,7 @@ class _WheelPageState extends State<WheelPage>
 
                     Text(
                       "已选择 $selectedCount / $totalCount",
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                         fontSize: 13,
                       ),
@@ -619,7 +619,7 @@ class _WheelPageState extends State<WheelPage>
 
                                 Expanded(
                                   child: visibleFoods.isEmpty
-                                      ? const Center(
+                                      ? Center(
                                     child: Text(
                                       "暂无产品",
                                       style: TextStyle(
@@ -1440,7 +1440,7 @@ class _WheelPageState extends State<WheelPage>
                             0,
                           ),
                           child:
-                          const Icon(
+                          Icon(
                             Icons
                                 .arrow_drop_down,
                             size: 42,
@@ -1509,7 +1509,7 @@ class _WheelPageState extends State<WheelPage>
                   Text(
                     "共 ${candidates.length} 个候选产品",
                     style:
-                    const TextStyle(
+                    TextStyle(
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
                       fontSize: 12,
                     ),
