@@ -52,9 +52,9 @@ class _HomePageState extends State<HomePage> {
       brands = brandData
           .where(
             (e) => e["name"].toString().toLowerCase().contains(
-              searchText.toLowerCase(),
-            ),
-          )
+          searchText.toLowerCase(),
+        ),
+      )
           .toList();
     });
   }
@@ -79,9 +79,9 @@ class _HomePageState extends State<HomePage> {
         brands = brandData
             .where(
               (e) => e["name"].toString().toLowerCase().contains(
-                searchText.toLowerCase(),
-              ),
-            )
+            searchText.toLowerCase(),
+          ),
+        )
             .toList();
       }
     });
@@ -111,9 +111,9 @@ class _HomePageState extends State<HomePage> {
       final matched = list
           .where(
             (e) => e["name"].toString().toLowerCase().contains(
-              searchText.toLowerCase(),
-            ),
-          )
+          searchText.toLowerCase(),
+        ),
+      )
           .toList();
 
       if (matched.isNotEmpty) {
@@ -138,9 +138,9 @@ class _HomePageState extends State<HomePage> {
       brands = firstBrands
           .where(
             (e) => e["name"].toString().toLowerCase().contains(
-              searchText.toLowerCase(),
-            ),
-          )
+          searchText.toLowerCase(),
+        ),
+      )
           .toList();
     });
   }
@@ -216,8 +216,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                           );
 
-                          await loadData(); // 刷新热量库
-                          await refreshWheel(); // 刷新转盘
+                          await loadData();
+                          await refreshWheel();
                         },
                         child: Container(
                           width: 48,
@@ -289,8 +289,13 @@ class _HomePageState extends State<HomePage> {
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: selected
-                                                ? Theme.of(context).colorScheme.onPrimary
-                                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: .87),
+                                                ? Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary
+                                                : Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: .87),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
                                           ),
@@ -301,7 +306,10 @@ class _HomePageState extends State<HomePage> {
                                         Text(
                                           "${brands.length}",
                                           style: TextStyle(
-                                            color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary
+                                                .withValues(alpha: .70),
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -329,102 +337,115 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: brands.isEmpty
                               ? Center(
-                                  child: Text(
-                                    "暂无品牌\n点击下方 + 添加",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
-                                  ),
-                                )
+                            child: Text(
+                              "暂无品牌\n点击下方 + 添加",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: .55),
+                              ),
+                            ),
+                          )
                               : ListView.builder(
-                                  itemCount: brands.length,
-                                  itemBuilder: (_, i) {
-                                    final brand = brands[i];
+                            itemCount: brands.length,
+                            itemBuilder: (_, i) {
+                              final brand = brands[i];
 
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 10,
-                                      ),
-                                      child: Material(
-                                        color: Theme.of(context).brightness == Brightness.dark
-                                            ? const Color(0xff2C2C2E)
-                                            : Theme.of(context).colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(18),
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 10,
+                                ),
+                                child: Material(
+                                  color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                      ? const Color(0xff2C2C2E)
+                                      : const Color(0xfffafafa),
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(
+                                      18,
+                                    ),
+                                    onTap: () async {
+                                      final result =
+                                      await Navigator.push<bool>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BrandPage(
+                                            brandId: brand["id"],
+                                            brandName: brand["name"],
+                                            category:
+                                            selectedCategory,
                                           ),
-                                          onTap: () async {
-                                            final result =
-                                                await Navigator.push<bool>(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => BrandPage(
-                                                      brandId: brand["id"],
-                                                      brandName: brand["name"],
-                                                      category:
-                                                          selectedCategory,
-                                                    ),
-                                                  ),
-                                                );
+                                        ),
+                                      );
 
-                                            if (result == true) {
-                                              await loadBrands();
-                                            }
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 18,
-                                              vertical: 18,
-                                            ),
+                                      if (result == true) {
+                                        await loadBrands();
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 18,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
                                             child: Row(
                                               children: [
-                                                Expanded(
-                                                  child: Row(
-                                                    children: [
-                                                      if ((brand["isTop"] ??
-                                                              0) ==
-                                                          1)
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                right: 6,
-                                                              ),
-                                                          child: Icon(
-                                                            Icons.push_pin,
-                                                            size: 14,
-                                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
-                                                          ),
-                                                        ),
-
-                                                      Expanded(
-                                                        child: Text(
-                                                          brand["name"],
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 18,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
+                                                if ((brand["isTop"] ??
+                                                    0) ==
+                                                    1)
+                                                  Padding(
+                                                    padding:
+                                                    const EdgeInsets.only(
+                                                      right: 6,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.push_pin,
+                                                      size: 14,
+                                                      color: Theme.of(
+                                                          context)
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                        alpha: .55,
                                                       ),
-                                                    ],
+                                                    ),
                                                   ),
-                                                ),
-                                                Icon(
-                                                  Icons.chevron_right,
-                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                                                Expanded(
+                                                  child: Text(
+                                                    brand["name"],
+                                                    style:
+                                                    const TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                      FontWeight.w600,
+                                                    ),
+                                                    overflow: TextOverflow
+                                                        .ellipsis,
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                        ),
+                                          Icon(
+                                            Icons.chevron_right,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: .55),
+                                          ),
+                                        ],
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ),
                                 ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -479,18 +500,33 @@ class _HomePageState extends State<HomePage> {
         width: 108,
         height: 54,
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
+            Icon(
+              icon,
+              color: selected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: .55),
+            ),
             const SizedBox(height: 2),
             Text(
               text,
               style: TextStyle(
-                color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                color: selected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: .55),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -511,7 +547,11 @@ class _HomePageState extends State<HomePage> {
           color: Theme.of(context).colorScheme.primary,
           shape: BoxShape.circle,
         ),
-        child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: 30),
+        child: Icon(
+          Icons.add,
+          color: Theme.of(context).colorScheme.onPrimary,
+          size: 30,
+        ),
       ),
     );
   }

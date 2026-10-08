@@ -603,7 +603,7 @@ class _BrandPageState extends State<BrandPage> {
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.onPrimary,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(22),
                       ),
                       child: TextField(
@@ -697,7 +697,7 @@ class _BrandPageState extends State<BrandPage> {
                         children: [
                           SlidableAction(
                             onPressed: (_) => editFood(food),
-                            backgroundColor: const Color(0xFF2D2D2D),
+                            backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             icon: Icons.edit_outlined,
                             label: "编辑",
@@ -725,7 +725,9 @@ class _BrandPageState extends State<BrandPage> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xff2C2C2E)
+                              : const Color(0xffFAFAFA),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Row(

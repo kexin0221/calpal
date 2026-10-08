@@ -14,1119 +14,1372 @@ class WheelPage extends StatefulWidget {
 
 class _WheelPageState extends State<WheelPage>
     with SingleTickerProviderStateMixin {
-  final db = DatabaseHelper.instance;
-
-  List<Map<String, dynamic>> categories = [];
-  List<Map<String, dynamic>> brands = [];
-  List<Map<String, dynamic>> foods = [];
-
-  // 第一层筛选后的全部候选产品
-  List<Map<String, dynamic>> allCandidates = [];
-
-  // 当前实际参与转盘的候选产品
-  List<Map<String, dynamic>> candidates = [];
-
-  // 当前这一轮转盘显示的12个产品
-  List<Map<String, dynamic>> wheelFoods = [];
-
-  // 预设方案
-  List<Map<String, dynamic>> presets = [];
-
-  Set<String> selectedCategories = {};
-  Set<int> selectedBrands = {};
-  Set<String> selectedRanges = {};
-
-  late AnimationController controller;
-  Animation<double>? rotationAnimation;
-
-  double angle = 0;
-  bool spinning = false;
-  bool isLoading = true;
-  double pointerOffset = 0;
-
-  String resultBrand = "";
-  String resultFood = "";
-  int resultCalories = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    controller = AnimationController(vsync: this);
-    loadData();
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> loadData() async {
-    setState(() => isLoading = true);
-
-    categories = await db.getCategories();
-    brands = await db.getAllBrands();
-    foods = await db.getAllFoods();
-    presets = await db.getPresets();
-
-    filterFoods();
-
-    if (mounted) {
-      setState(() => isLoading = false);
-    }
-  }
-
-  // ==================== 预设方案 ====================
-
-  Future<void> createPreset() async {
-    final controller = TextEditingController();
-
-    final name = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("保存预设方案"),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: "例如：学校、公司",
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, controller.text.trim()),
-            child: const Text("保存"),
-          ),
-        ],
-      ),
-    );
-
-    if (name == null || name.isEmpty) return;
-
-    await db.addPreset(
-      name: name,
-      categories: selectedCategories,
-      brands: selectedBrands,
-      ranges: selectedRanges,
-    );
-
-    presets = await db.getPresets();
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void applyPreset(Map<String, dynamic> preset) {
-    selectedCategories = Set<String>.from(
-      List<String>.from(
-        jsonDecode(preset["categories"]),
-      ),
-    );
-
-    selectedBrands = Set<int>.from(
-      List<int>.from(
-        jsonDecode(preset["brands"]),
-      ),
-    );
-
-    selectedRanges = Set<String>.from(
-      List<String>.from(
-        jsonDecode(preset["ranges"]),
-      ),
-    );
-
-    filterFoods();
-  }
-
-  Future<void> presetMenu(Map<String, dynamic> preset) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text("重命名"),
-              onTap: () => Navigator.pop(context, "rename"),
-            ),
-            ListTile(
-              leading: const Icon(Icons.refresh),
-              title: const Text("更新为当前筛选"),
-              onTap: () => Navigator.pop(context, "update"),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
-              ),
-              title: const Text(
-                "删除",
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () => Navigator.pop(context, "delete"),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (action == null) return;
-
-    if (action == "rename") {
-      final c = TextEditingController(
-        text: preset["name"],
-      );
-
-      final name = await showDialog<String>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("重命名"),
-          content: TextField(
-            controller: c,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("取消"),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.pop(context, c.text.trim()),
-              child: const Text("保存"),
-            ),
-          ],
-        ),
-      );
-
-      if (name != null && name.isNotEmpty) {
-        await db.renamePreset(
-          id: preset["id"],
-          name: name,
-        );
-      }
-    }
-
-    if (action == "update") {
-      await db.updatePreset(
-        id: preset["id"],
-        categories: selectedCategories,
-        brands: selectedBrands,
-        ranges: selectedRanges,
-      );
-    }
-
-    if (action == "delete") {
-      await db.deletePreset(preset["id"]);
-    }
-
-    presets = await db.getPresets();
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  // ==================== 第一层筛选 ====================
-
-  void filterFoods() {
-    final brandMap = {
-      for (var b in brands) b["id"]: b,
-    };
-
-    allCandidates = foods.where((food) {
-      final brand = brandMap[food["brandId"]];
-
-      if (brand == null) return false;
-
-      if (selectedCategories.isNotEmpty &&
-          !selectedCategories.contains(
-            brand["category"],
-          )) {
-        return false;
-      }
-
-      if (selectedBrands.isNotEmpty &&
-          !selectedBrands.contains(
-            brand["id"],
-          )) {
-        return false;
-      }
-
-      final c = food["calories"] as int;
-
-      final isDrinkMode = selectedBrands.isNotEmpty &&
-          selectedBrands.any(
-            (id) =>
-                brandMap[id]?['category'] == '饮品',
-          );
-
-      if (selectedRanges.isNotEmpty) {
-        bool ok = false;
-
-        if (isDrinkMode) {
-          if (selectedRanges.contains("0-150") && c < 150) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("150-220") &&
-              c >= 150 &&
-              c < 220) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("220-300") &&
-              c >= 220 &&
-              c < 300) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("300+") && c >= 300) {
-            ok = true;
-          }
-        } else {
-          if (selectedRanges.contains("0-300") && c < 300) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("300-400") &&
-              c >= 300 &&
-              c < 400) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("400-500") &&
-              c >= 400 &&
-              c < 500) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("500+") && c >= 500) {
-            ok = true;
-          }
-        }
-
-        if (!ok) return false;
-      }
-
-      return true;
-    }).toList();
-
-    allCandidates.shuffle();
-
-    // 修改分类/品牌/热量筛选后，
-    // 默认全部候选产品重新参与转盘
-    candidates = List<Map<String, dynamic>>.from(
-      allCandidates,
-    );
-
-    wheelFoods = candidates
-        .take(min(12, candidates.length))
-        .toList();
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  // ==================== 候选产品弹窗 ====================
-
-  Future<void> showCandidateProducts() async {
-    if (allCandidates.isEmpty) {
-      await showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("候选产品"),
-          content: const Text(
-            "当前筛选条件下没有符合要求的产品。",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("知道了"),
-            ),
-          ],
-        ),
-      );
-
-      return;
-    }
-
-    // 当前已经选中的产品
-    final selectedFoodIds = candidates
-        .map((food) => food["id"] as int)
-        .toSet();
-
-    // 当前弹窗左侧选中的品牌
-    int? selectedBrandId;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
-      ),
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setSheet) {
-            // 当前候选产品涉及到的品牌
-            final candidateBrandIds = allCandidates
-                .map((food) => food["brandId"] as int)
-                .toSet();
-
-            final candidateBrands = brands
-                .where(
-                  (brand) =>
-                  candidateBrandIds.contains(
-                    brand["id"],
-                  ),
-            )
-                .toList();
-
-            // 默认选择第一个品牌
-            selectedBrandId ??= candidateBrands.isEmpty
-                ? null
-                : candidateBrands.first["id"] as int;
-
-            final visibleFoods = allCandidates
-                .where(
-                  (food) =>
-              food["brandId"] == selectedBrandId,
-            )
-                .toList();
-
-            final selectedCount = selectedFoodIds.length;
-            final totalCount = allCandidates.length;
-
-            final allVisibleSelected = visibleFoods.isNotEmpty &&
-                visibleFoods.every(
-                      (food) => selectedFoodIds.contains(
-                    food["id"] as int,
-                  ),
-                );
-
-            return SizedBox(
-              height: MediaQuery.of(context).size.height * 0.78,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  20,
-                  18,
-                  20,
-                  12,
-                ),
-                child: Column(
-                  children: [
-                    // ===== 标题 =====
-                    const Text(
-                      "候选产品",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Text(
-                      "已选择 $selectedCount / $totalCount",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
-                        fontSize: 13,
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // ===== 品牌 + 产品 =====
-                    Expanded(
-                      child: Row(
-                        children: [
-                          // ===== 左侧品牌 =====
-                          Container(
-                            width: 105,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              borderRadius:
-                              BorderRadius.circular(18),
-                            ),
-                            child: ListView.builder(
-                              itemCount:
-                              candidateBrands.length,
-                              itemBuilder: (_, i) {
-                                final brand =
-                                candidateBrands[i];
-
-                                final brandId =
-                                brand["id"] as int;
-
-                                final selected =
-                                    brandId ==
-                                        selectedBrandId;
-
-                                final brandFoodCount =
-                                    allCandidates
-                                        .where(
-                                          (food) =>
-                                      food["brandId"] ==
-                                          brandId,
-                                    )
-                                        .length;
-
-                                return GestureDetector(
-                                  onTap: () {
-                                    setSheet(() {
-                                      selectedBrandId =
-                                          brandId;
-                                    });
-                                  },
-                                  child: Container(
-                                    margin:
-                                    const EdgeInsets
-                                        .symmetric(
-                                      horizontal: 6,
-                                      vertical: 3,
-                                    ),
-                                    padding:
-                                    const EdgeInsets
-                                        .symmetric(
-                                      horizontal: 8,
-                                      vertical: 12,
-                                    ),
-                                    decoration:
-                                    BoxDecoration(
-                                      color: selected
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Colors.transparent,
-                                      borderRadius:
-                                      BorderRadius.circular(
-                                        14,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          brand["name"],
-                                          textAlign:
-                                          TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.w600,
-                                            color: selected
-                                                ? Theme.of(context).colorScheme.onPrimary
-                                                : Theme.of(context).colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          "$brandFoodCount",
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: selected
-                                                ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70)
-                                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(width: 14),
-
-                          // ===== 右侧产品 =====
-                          Expanded(
-                            child: Column(
-                              children: [
-                                // 当前品牌全选 / 全不选
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        candidateBrands
-                                            .firstWhere(
-                                              (b) =>
-                                          b["id"] ==
-                                              selectedBrandId,
-                                          orElse: () => {
-                                            "name": "",
-                                          },
-                                        )["name"]
-                                            .toString(),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight:
-                                          FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-
-                                    TextButton(
-                                      onPressed: visibleFoods
-                                          .isEmpty
-                                          ? null
-                                          : () {
-                                        setSheet(() {
-                                          if (allVisibleSelected) {
-                                            for (final food
-                                            in visibleFoods) {
-                                              selectedFoodIds
-                                                  .remove(
-                                                food["id"]
-                                                as int,
-                                              );
-                                            }
-                                          } else {
-                                            for (final food
-                                            in visibleFoods) {
-                                              selectedFoodIds
-                                                  .add(
-                                                food["id"]
-                                                as int,
-                                              );
-                                            }
-                                          }
-                                        });
-                                      },
-                                      child: Text(
-                                        allVisibleSelected
-                                            ? "取消全选"
-                                            : "全选",
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 4),
-
-                                Expanded(
-                                  child: visibleFoods.isEmpty
-                                      ? Center(
-                                    child: Text(
-                                      "暂无产品",
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
-                                      ),
-                                    ),
-                                  )
-                                      : ListView.builder(
-                                    itemCount:
-                                    visibleFoods
-                                        .length,
-                                    itemBuilder:
-                                        (_, i) {
-                                      final food =
-                                      visibleFoods[
-                                      i];
-
-                                      final foodId =
-                                      food["id"]
-                                      as int;
-
-                                      return CheckboxListTile(
-                                        key: ValueKey(
-                                          "candidate_${foodId}",
-                                        ),
-                                        value:
-                                        selectedFoodIds
-                                            .contains(
-                                          foodId,
-                                        ),
-                                        activeColor: Theme.of(context).colorScheme.primary,
-                                        contentPadding:
-                                        EdgeInsets
-                                            .zero,
-                                        title: Text(
-                                          food["name"]
-                                              .toString(),
-                                          style:
-                                          const TextStyle(
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        subtitle:
-                                        Text(
-                                          "${food["calories"]} kcal",
-                                          style:
-                                          const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors
-                                                .grey,
-                                          ),
-                                        ),
-                                        controlAffinity:
-                                        ListTileControlAffinity
-                                            .leading,
-                                        onChanged:
-                                            (_) {
-                                          setSheet(() {
-                                            selectedFoodIds
-                                                .contains(
-                                              foodId,
-                                            )
-                                                ? selectedFoodIds
-                                                .remove(
-                                              foodId,
-                                            )
-                                                : selectedFoodIds
-                                                .add(
-                                              foodId,
-                                            );
-                                          });
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ===== 完成按钮 =====
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          minimumSize:
-                          const Size.fromHeight(48),
-                        ),
-                        onPressed: () {
-                          candidates = allCandidates
-                              .where(
-                                (food) =>
-                                selectedFoodIds.contains(
-                                  food["id"] as int,
-                                ),
-                          )
-                              .toList();
-
-                          wheelFoods = candidates
-                              .take(
-                            min(
-                              12,
-                              candidates.length,
-                            ),
-                          )
-                              .toList();
-
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          "完成（${selectedFoodIds.length}）",
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  // ==================== 转盘 ====================
-
-  Future<void> spinWheel() async {
-    if (spinning) return;
-    if (candidates.isEmpty) return;
-    if (wheelFoods.isEmpty) return;
-
-    setState(() {
-      spinning = true;
-      resultBrand = "";
-      resultFood = "";
-      resultCalories = 0;
-    });
-
-    // 每一轮重新随机12个产品
-    final pool =
-    List<Map<String, dynamic>>.from(candidates);
-
-    pool.shuffle();
-
-    wheelFoods = pool
-        .take(min(12, pool.length))
-        .toList();
-
-    setState(() {});
-
-    final random = Random();
-
-    final winner =
-    random.nextInt(wheelFoods.length);
-
-    final duration =
-        4 + random.nextDouble() * 3;
-
-    final sweep =
-        2 * pi / wheelFoods.length;
-
-    final targetAngle =
-        (winner + 0.5) * sweep;
-
-    final endAngle = angle +
-        (2 * pi * (8 + random.nextInt(5))) +
-        (2 * pi - targetAngle);
-
-    controller.duration = Duration(
-      milliseconds: (duration * 1000).round(),
-    );
-
-    rotationAnimation = Tween<double>(
-      begin: angle,
-      end: endAngle,
-    ).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-
-    controller.removeListener(_updateRotation);
-    controller.addListener(_updateRotation);
-
-    await controller.forward(from: 0);
-
-    // 指针咔哒动画
-    setState(() => pointerOffset = 8);
-
-    await Future.delayed(
-      const Duration(milliseconds: 70),
-    );
-
-    setState(() => pointerOffset = 0);
-
-    final food = wheelFoods[winner];
-
-    final brand = brands.firstWhere(
-          (e) => e["id"] == food["brandId"],
-    );
-
-    setState(() {
-      angle = endAngle % (2 * pi);
-
-      resultBrand = brand["name"];
-      resultFood = food["name"];
-      resultCalories = food["calories"];
-
-      spinning = false;
-    });
-  }
-
-  void _updateRotation() {
-    if (rotationAnimation == null) return;
-
-    setState(() {
-      angle = rotationAnimation!.value;
-    });
-  }
-
-  // ==================== 分类 / 品牌 ====================
-
-  Future<void> chooseCategoryBrand() async {
-    if (categories.isEmpty) return;
-
-    String currentCategory = selectedCategories.isEmpty
-        ? categories.first["name"]
-        : selectedCategories.first;
-
-    final tempBrands = Set<int>.from(selectedBrands);
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
-      ),
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setSheet) {
-            final selectedDrinkBrand = tempBrands.any(
-              (id) => brands.firstWhere(
-                (b) => b["id"] == id,
-              )["category"] == "饮品",
-            );
-
-            final selectedNormalBrand = tempBrands.any(
-              (id) => brands.firstWhere(
-                (b) => b["id"] == id,
-              )["category"] != "饮品",
-            );
-
-            final selectedDrinkRange = selectedRanges.any(
-              (r) =>
-                  r == "0-150" ||
-                  r == "150-220" ||
-                  r == "220-300" ||
-                  r == "300+",
-            );
-
-            final selectedNormalRange = selectedRanges.any(
-              (r) =>
-                  r == "0-300" ||
-                  r == "300-400" ||
-                  r == "400-500" ||
-                  r == "500+",
-            );
-
-            final drinkLocked =
-                selectedNormalBrand || selectedNormalRange;
-            final normalLocked =
-                selectedDrinkBrand || selectedDrinkRange;
-
-            final visibleBrands = brands.where((b) {
-              return b["category"] == currentCategory;
-            }).toList();
-
-            return SizedBox(
-              height:
-                  MediaQuery.of(context).size.height * 0.72,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    const Text(
-                      "选择品牌",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 96,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: ListView.builder(
-                              itemCount: categories.length,
-                              itemBuilder: (_, i) {
-                                final name = categories[i]["name"];
-                                final selected = name == currentCategory;
-                                final disabled = name == "饮品"
-                                    ? drinkLocked
-                                    : normalLocked;
-
-                                return GestureDetector(
-                                  onTap: disabled
-                                      ? null
-                                      : () {
-                                          setSheet(() {
-                                            currentCategory = name;
-                                          });
-                                        },
-                                  child: Opacity(
-                                    opacity: disabled ? 0.35 : 1,
-                                    child: Container(
-                                      height: 50,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: selected
-                                            ? Theme.of(context).colorScheme.primary
-                                            : Colors.transparent,
-                                        borderRadius:
-                                            BorderRadius.circular(14),
-                                      ),
-                                      child: Text(
-                                        name,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: selected
-                                              ? Theme.of(context).colorScheme.onPrimary
-                                              : Theme.of(context).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(width: 14),
-
-                          Expanded(
-                            child: ListView(
-                              children: visibleBrands.map((b) {
-                                final isDrinkBrand =
-                                    b["category"] == "饮品";
-                                final disabled = isDrinkBrand
-                                    ? drinkLocked
-                                    : normalLocked;
-
-                                return CheckboxListTile(
-                                  key: ValueKey(
-                                    "${currentCategory}_${b["id"]}",
-                                  ),
-                                  value: tempBrands.contains(b["id"]),
-                                  activeColor: Theme.of(context).colorScheme.primary,
-                                  title: Opacity(
-                                    opacity: disabled ? 0.35 : 1,
-                                    child: Text(b["name"]),
-                                  ),
-                                  controlAffinity:
-                                      ListTileControlAffinity.leading,
-                                  onChanged: disabled
-                                      ? null
-                                      : (_) {
-                                          setSheet(() {
-                                            tempBrands.contains(b["id"])
-                                                ? tempBrands.remove(b["id"])
-                                                : tempBrands.add(b["id"]);
-                                          });
-                                        },
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                        ),
-                        onPressed: () {
-                          selectedBrands = tempBrands;
-
-                          selectedCategories = tempBrands
-                              .map(
-                                (id) => brands.firstWhere(
-                                  (e) => e["id"] == id,
-                                )["category"] as String,
-                              )
-                              .toSet();
-
-                          Navigator.pop(context);
-
-                          filterFoods();
-                        },
-                        child: const Text("完成"),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
+final db = DatabaseHelper.instance;
+
+List<Map<String, dynamic>> categories = [];
+List<Map<String, dynamic>> brands = [];
+List<Map<String, dynamic>> foods = [];
+
+// 第一层筛选后的全部候选产品
+List<Map<String, dynamic>> allCandidates = [];
+
+// 当前实际参与转盘的候选产品
+List<Map<String, dynamic>> candidates = [];
+
+// 当前这一轮转盘显示的12个产品
+List<Map<String, dynamic>> wheelFoods = [];
+
+// 预设方案
+List<Map<String, dynamic>> presets = [];
+
+Set<String> selectedCategories = {};
+Set<int> selectedBrands = {};
+Set<String> selectedRanges = {};
+
+late AnimationController controller;
+Animation<double>? rotationAnimation;
+
+double angle = 0;
+bool spinning = false;
+bool isLoading = true;
+double pointerOffset = 0;
+
+String resultBrand = "";
+String resultFood = "";
+int resultCalories = 0;
+
+@override
+void initState() {
+super.initState();
+controller = AnimationController(vsync: this);
+loadData();
+}
+
+@override
+void dispose() {
+controller.dispose();
+super.dispose();
+}
+
+Future<void> loadData() async {
+setState(() => isLoading = true);
+
+categories = await db.getCategories();
+brands = await db.getAllBrands();
+foods = await db.getAllFoods();
+presets = await db.getPresets();
+
+filterFoods();
+
+if (mounted) {
+setState(() => isLoading = false);
+}
+}
+
+// ==================== 预设方案 ====================
+
+Future<void> createPreset() async {
+final controller = TextEditingController();
+
+final name = await showDialog<String>(
+context: context,
+builder: (_) => AlertDialog(
+title: const Text("保存预设方案"),
+content: TextField(
+controller: controller,
+autofocus: true,
+decoration: const InputDecoration(
+hintText: "例如：学校、公司",
+),
+),
+actions: [
+TextButton(
+onPressed: () => Navigator.pop(context),
+child: const Text("取消"),
+),
+FilledButton(
+onPressed: () =>
+Navigator.pop(context, controller.text.trim()),
+child: const Text("保存"),
+),
+],
+),
+);
+
+if (name == null || name.isEmpty) return;
+
+await db.addPreset(
+name: name,
+categories: selectedCategories,
+brands: selectedBrands,
+ranges: selectedRanges,
+);
+
+presets = await db.getPresets();
+
+if (mounted) {
+setState(() {});
+}
+}
+
+void applyPreset(Map<String, dynamic> preset) {
+selectedCategories = Set<String>.from(
+List<String>.from(
+jsonDecode(preset["categories"]),
+),
+);
+
+selectedBrands = Set<int>.from(
+List<int>.from(
+jsonDecode(preset["brands"]),
+),
+);
+
+selectedRanges = Set<String>.from(
+List<String>.from(
+jsonDecode(preset["ranges"]),
+),
+);
+
+filterFoods();
+}
+
+Future<void> presetMenu(Map<String, dynamic> preset) async {
+final action = await showModalBottomSheet<String>(
+context: context,
+backgroundColor: Theme.of(context).colorScheme.surface,
+shape: const RoundedRectangleBorder(
+borderRadius: BorderRadius.vertical(
+top: Radius.circular(24),
+),
+),
+builder: (_) => SafeArea(
+child: Column(
+mainAxisSize: MainAxisSize.min,
+children: [
+ListTile(
+leading: const Icon(Icons.edit),
+title: const Text("重命名"),
+onTap: () => Navigator.pop(context, "rename"),
+),
+ListTile(
+leading: const Icon(Icons.refresh),
+title: const Text("更新为当前筛选"),
+onTap: () => Navigator.pop(context, "update"),
+),
+ListTile(
+leading: const Icon(
+Icons.delete_outline,
+color: Colors.red,
+),
+title: const Text(
+"删除",
+style: TextStyle(color: Colors.red),
+),
+onTap: () => Navigator.pop(context, "delete"),
+),
+],
+),
+),
+);
+
+if (action == null) return;
+
+if (action == "rename") {
+final c = TextEditingController(
+text: preset["name"],
+);
+
+final name = await showDialog<String>(
+context: context,
+builder: (_) => AlertDialog(
+title: const Text("重命名"),
+content: TextField(
+controller: c,
+),
+actions: [
+TextButton(
+onPressed: () => Navigator.pop(context),
+child: const Text("取消"),
+),
+FilledButton(
+onPressed: () =>
+Navigator.pop(context, c.text.trim()),
+child: const Text("保存"),
+),
+],
+),
+);
+
+if (name != null && name.isNotEmpty) {
+await db.renamePreset(
+id: preset["id"],
+name: name,
+);
+}
+}
+
+if (action == "update") {
+await db.updatePreset(
+id: preset["id"],
+categories: selectedCategories,
+brands: selectedBrands,
+ranges: selectedRanges,
+);
+}
+
+if (action == "delete") {
+await db.deletePreset(preset["id"]);
+}
+
+presets = await db.getPresets();
+
+if (mounted) {
+setState(() {});
+}
+}
+
+// ==================== 第一层筛选 ====================
+
+void filterFoods() {
+final brandMap = {
+for (var b in brands) b["id"]: b,
+};
+
+allCandidates = foods.where((food) {
+final brand = brandMap[food["brandId"]];
+
+if (brand == null) return false;
+
+if (selectedCategories.isNotEmpty &&
+!selectedCategories.contains(
+brand["category"],
+)) {
+return false;
+}
+
+if (selectedBrands.isNotEmpty &&
+!selectedBrands.contains(
+brand["id"],
+)) {
+return false;
+}
+
+final c = food["calories"] as int;
+
+final isDrinkMode = selectedBrands.isNotEmpty &&
+selectedBrands.any(
+(id) =>
+brandMap[id]?['category'] == '饮品',
+);
+
+if (selectedRanges.isNotEmpty) {
+bool ok = false;
+
+if (isDrinkMode) {
+if (selectedRanges.contains("0-150") && c < 150) {
+ok = true;
+}
+
+if (selectedRanges.contains("150-220") &&
+c >= 150 &&
+c < 220) {
+ok = true;
+}
+
+if (selectedRanges.contains("220-300") &&
+c >= 220 &&
+c < 300) {
+ok = true;
+}
+
+if (selectedRanges.contains("300+") && c >= 300) {
+ok = true;
+}
+} else {
+if (selectedRanges.contains("0-300") && c < 300) {
+ok = true;
+}
+
+if (selectedRanges.contains("300-400") &&
+c >= 300 &&
+c < 400) {
+ok = true;
+}
+
+if (selectedRanges.contains("400-500") &&
+c >= 400 &&
+c < 500) {
+ok = true;
+}
+
+if (selectedRanges.contains("500+") && c >= 500) {
+ok = true;
+}
+}
+
+if (!ok) return false;
+}
+
+return true;
+}).toList();
+
+allCandidates.shuffle();
+
+// 修改分类/品牌/热量筛选后，
+// 默认全部候选产品重新参与转盘
+candidates = List<Map<String, dynamic>>.from(
+allCandidates,
+);
+
+wheelFoods = candidates
+.take(min(12, candidates.length))
+.toList();
+
+if (mounted) {
+setState(() {});
+}
+}
+
+// ==================== 候选产品弹窗 ====================
+
+Future<void> showCandidateProducts() async {
+if (allCandidates.isEmpty) {
+await showDialog(
+context: context,
+builder: (_) => AlertDialog(
+title: const Text("候选产品"),
+content: const Text(
+"当前筛选条件下没有符合要求的产品。",
+),
+actions: [
+TextButton(
+onPressed: () => Navigator.pop(context),
+child: const Text("知道了"),
+),
+],
+),
+);
+
+return;
+}
+
+// 当前已经选中的产品
+final selectedFoodIds = candidates
+.map((food) => food["id"] as int)
+.toSet();
+
+// 当前弹窗左侧选中的品牌
+int? selectedBrandId;
+
+await showModalBottomSheet(
+context: context,
+isScrollControlled: true,
+backgroundColor: Theme.of(context).colorScheme.surface,
+shape: const RoundedRectangleBorder(
+borderRadius: BorderRadius.vertical(
+top: Radius.circular(28),
+),
+),
+builder: (_) {
+return StatefulBuilder(
+builder: (context, setSheet) {
+// 当前候选产品涉及到的品牌
+final candidateBrandIds = allCandidates
+.map((food) => food["brandId"] as int)
+.toSet();
+
+final candidateBrands = brands
+.where(
+(brand) =>
+candidateBrandIds.contains(
+brand["id"],
+),
+)
+.toList();
+
+// 默认选择第一个品牌
+selectedBrandId ??= candidateBrands.isEmpty
+? null
+: candidateBrands.first["id"] as int;
+
+final visibleFoods = allCandidates
+.where(
+(food) =>
+food["brandId"] == selectedBrandId,
+)
+.toList();
+
+final selectedCount = selectedFoodIds.length;
+final totalCount = allCandidates.length;
+
+final allVisibleSelected = visibleFoods.isNotEmpty &&
+visibleFoods.every(
+(food) => selectedFoodIds.contains(
+food["id"] as int,
+),
+);
+
+return SizedBox(
+height: MediaQuery.of(context).size.height * 0.78,
+child: Padding(
+padding: const EdgeInsets.fromLTRB(
+20,
+18,
+20,
+12,
+),
+child: Column(
+children: [
+const Text(
+"候选产品",
+style: TextStyle(
+fontSize: 20,
+fontWeight: FontWeight.bold,
+),
+),
+
+const SizedBox(height: 6),
+
+Text(
+"已选择 $selectedCount / $totalCount",
+style: TextStyle(
+color: Theme.of(context)
+.colorScheme
+.onSurface
+.withValues(alpha: .55),
+fontSize: 13,
+),
+),
+
+const SizedBox(height: 18),
+
+// ===== 品牌 + 产品 =====
+Expanded(
+child: Row(
+children: [
+// ===== 左侧品牌 =====
+Container(
+width: 105,
+decoration: BoxDecoration(
+color: Theme.of(context)
+.colorScheme
+.surfaceContainerHighest,
+borderRadius:
+BorderRadius.circular(18),
+),
+child: ListView.builder(
+itemCount: candidateBrands.length,
+itemBuilder: (_, i) {
+final brand =
+candidateBrands[i];
+
+final brandId =
+brand["id"] as int;
+
+final selected =
+brandId == selectedBrandId;
+
+final brandFoodCount =
+allCandidates
+.where(
+(food) =>
+food["brandId"] ==
+brandId,
+)
+.length;
+
+return GestureDetector(
+onTap: () {
+setSheet(() {
+selectedBrandId =
+brandId;
+});
+},
+child: Container(
+margin:
+const EdgeInsets
+.symmetric(
+horizontal: 6,
+vertical: 3,
+),
+padding:
+const EdgeInsets
+.symmetric(
+horizontal: 8,
+vertical: 12,
+),
+decoration: BoxDecoration(
+color: selected
+? Theme.of(context)
+.colorScheme
+.primary
+: Colors.transparent,
+borderRadius:
+BorderRadius.circular(
+14,
+),
+),
+child: Column(
+children: [
+Text(
+brand["name"],
+textAlign:
+TextAlign.center,
+style: TextStyle(
+fontSize: 13,
+fontWeight:
+FontWeight.w600,
+color: selected
+? Theme.of(context)
+.colorScheme
+.onPrimary
+: Theme.of(context)
+.colorScheme
+.onSurface,
+),
+),
+const SizedBox(height: 3),
+Text(
+"$brandFoodCount",
+style: TextStyle(
+fontSize: 10,
+color: selected
+? Theme.of(context)
+.colorScheme
+.onPrimary
+.withValues(
+alpha: .70,
+)
+: Theme.of(context)
+.colorScheme
+.onSurface
+.withValues(
+alpha: .55,
+),
+),
+),
+],
+),
+),
+);
+},
+),
+),
+
+const SizedBox(width: 14),
+
+// ===== 右侧产品 =====
+Expanded(
+child: Column(
+children: [
+Row(
+children: [
+Expanded(
+child: Text(
+candidateBrands
+.firstWhere(
+(b) =>
+b["id"] ==
+selectedBrandId,
+orElse: () => {
+"name": "",
+},
+)["name"]
+.toString(),
+style: TextStyle(
+fontSize: 16,
+fontWeight:
+FontWeight.w700,
+color: Theme.of(context)
+.colorScheme
+.onSurface,
+),
+),
+),
+
+TextButton(
+onPressed: visibleFoods.isEmpty
+? null
+: () {
+setSheet(() {
+if (allVisibleSelected) {
+for (final food
+in visibleFoods) {
+selectedFoodIds
+.remove(
+food["id"]
+as int,
+);
+}
+} else {
+for (final food
+in visibleFoods) {
+selectedFoodIds
+.add(
+food["id"]
+as int,
+);
+}
+}
+});
+},
+child: Text(
+allVisibleSelected
+? "取消全选"
+: "全选",
+),
+),
+],
+),
+
+const SizedBox(height: 4),
+
+Expanded(
+child: visibleFoods.isEmpty
+? Center(
+child: Text(
+"暂无产品",
+style: TextStyle(
+color: Theme.of(context)
+.colorScheme
+.onSurface
+.withValues(
+alpha: .55,
+),
+),
+),
+)
+: ListView.builder(
+itemCount:
+visibleFoods.length,
+itemBuilder: (_, i) {
+final food =
+visibleFoods[i];
+
+final foodId =
+food["id"] as int;
+
+return CheckboxListTile(
+key: ValueKey(
+"candidate_$foodId",
+),
+value: selectedFoodIds
+.contains(
+foodId,
+),
+activeColor:
+Theme.of(context)
+.colorScheme
+.primary,
+contentPadding:
+EdgeInsets.zero,
+title: Text(
+food["name"]
+.toString(),
+style:
+const TextStyle(
+fontSize: 14,
+),
+),
+subtitle: Text(
+"${food["calories"]} kcal",
+style: TextStyle(
+fontSize: 12,
+color: Theme.of(
+context,
+)
+.colorScheme
+.onSurface
+.withValues(
+alpha: .55,
+),
+),
+),
+controlAffinity:
+ListTileControlAffinity
+.leading,
+onChanged: (_) {
+setSheet(() {
+selectedFoodIds
+.contains(
+foodId,
+)
+? selectedFoodIds
+.remove(
+foodId,
+)
+: selectedFoodIds
+.add(
+foodId,
+);
+});
+},
+);
+},
+),
+),
+],
+),
+),
+],
+),
+),
+
+const SizedBox(height: 12),
+
+// ===== 完成按钮 =====
+SizedBox(
+width: double.infinity,
+child: FilledButton(
+style: FilledButton.styleFrom(
+backgroundColor:
+Theme.of(context)
+.colorScheme
+.primary,
+minimumSize:
+const Size.fromHeight(48),
+),
+onPressed: () {
+candidates = allCandidates
+.where(
+(food) =>
+selectedFoodIds.contains(
+food["id"] as int,
+),
+)
+.toList();
+
+wheelFoods = candidates
+.take(
+min(
+12,
+candidates.length,
+),
+)
+.toList();
+
+Navigator.pop(context);
+},
+child: Text(
+"完成（${selectedFoodIds.length}）",
+),
+),
+),
+],
+),
+),
+);
+},
+);
+},
+);
+
+if (mounted) {
+setState(() {});
+}
+}
+
+// ==================== 转盘 ====================
+
+Future<void> spinWheel() async {
+if (spinning) return;
+if (candidates.isEmpty) return;
+if (wheelFoods.isEmpty) return;
+
+setState(() {
+spinning = true;
+resultBrand = "";
+resultFood = "";
+resultCalories = 0;
+});
+
+// 每一轮重新随机12个产品
+final pool =
+List<Map<String, dynamic>>.from(candidates);
+
+pool.shuffle();
+
+wheelFoods = pool
+.take(min(12, pool.length))
+.toList();
+
+setState(() {});
+
+final random = Random();
+
+final winner =
+random.nextInt(wheelFoods.length);
+
+final duration =
+4 + random.nextDouble() * 3;
+
+final sweep =
+2 * pi / wheelFoods.length;
+
+final targetAngle =
+(winner + 0.5) * sweep;
+
+final endAngle = angle +
+(2 * pi * (8 + random.nextInt(5))) +
+(2 * pi - targetAngle);
+
+controller.duration = Duration(
+milliseconds: (duration * 1000).round(),
+);
+
+rotationAnimation = Tween<double>(
+begin: angle,
+end: endAngle,
+).animate(
+CurvedAnimation(
+parent: controller,
+curve: Curves.easeOutCubic,
+),
+);
+
+controller.removeListener(_updateRotation);
+controller.addListener(_updateRotation);
+
+await controller.forward(from: 0);
+
+// 指针咔哒动画
+setState(() => pointerOffset = 8);
+
+await Future.delayed(
+const Duration(milliseconds: 70),
+);
+
+setState(() => pointerOffset = 0);
+
+final food = wheelFoods[winner];
+
+final brandMatches = brands.where(
+(e) => e["id"] == food["brandId"],
+);
+
+if (brandMatches.isEmpty) {
+setState(() {
+angle = endAngle % (2 * pi);
+resultBrand = "";
+resultFood = food["name"].toString();
+resultCalories = food["calories"] as int;
+spinning = false;
+});
+return;
+}
+
+final brand = brandMatches.first;
+
+setState(() {
+angle = endAngle % (2 * pi);
+resultBrand = brand["name"];
+resultFood = food["name"];
+resultCalories = food["calories"];
+
+spinning = false;
+});
+}
+
+void _updateRotation() {
+if (rotationAnimation == null) return;
+
+if (!mounted) return;
+
+setState(() {
+angle = rotationAnimation!.value;
+});
+}
+
+// ==================== 分类 / 品牌 ====================
+
+Future<void> chooseCategoryBrand() async {
+if (categories.isEmpty) return;
+
+// 防止 selectedCategories 中存在已经不存在的分类
+final categoryNames = categories
+.map((e) => e["name"].toString())
+.toSet();
+
+selectedCategories =
+selectedCategories
+.where(categoryNames.contains)
+.toSet();
+
+String currentCategory;
+
+if (selectedCategories.isNotEmpty &&
+categoryNames.contains(
+selectedCategories.first,
+)) {
+currentCategory =
+selectedCategories.first;
+} else {
+currentCategory =
+categories.first["name"].toString();
+}
+
+final tempBrands =
+Set<int>.from(selectedBrands);
+
+// 防止 selectedBrands 中存在已经不存在的品牌
+final brandIds =
+brands.map((e) => e["id"] as int).toSet();
+
+tempBrands.retainWhere(
+brandIds.contains,
+);
+
+await showModalBottomSheet(
+context: context,
+isScrollControlled: true,
+backgroundColor:
+Theme.of(context).colorScheme.surface,
+shape: const RoundedRectangleBorder(
+borderRadius: BorderRadius.vertical(
+top: Radius.circular(28),
+),
+),
+builder: (_) {
+return StatefulBuilder(
+builder: (context, setSheet) {
+final selectedDrinkBrand =
+tempBrands.any(
+(id) {
+final brandMatches = brands.where(
+(b) => b["id"] == id,
+);
+
+if (brandMatches.isEmpty) {
+return false;
+}
+
+return brandMatches.first["category"] ==
+"饮品";
+},
+);
+
+final selectedNormalBrand =
+tempBrands.any(
+(id) {
+final brandMatches = brands.where(
+(b) => b["id"] == id,
+);
+
+if (brandMatches.isEmpty) {
+return false;
+}
+
+return brandMatches.first["category"] !=
+"饮品";
+},
+);
+
+final selectedDrinkRange =
+selectedRanges.any(
+(r) =>
+r == "0-150" ||
+r == "150-220" ||
+r == "220-300" ||
+r == "300+",
+);
+
+final selectedNormalRange =
+selectedRanges.any(
+(r) =>
+r == "0-300" ||
+r == "300-400" ||
+r == "400-500" ||
+r == "500+",
+);
+
+final drinkLocked =
+selectedNormalBrand ||
+selectedNormalRange;
+
+final normalLocked =
+selectedDrinkBrand ||
+selectedDrinkRange;
+
+final visibleBrands = brands
+.where(
+(b) =>
+b["category"] ==
+currentCategory,
+)
+.toList();
+
+return SizedBox(
+height:
+MediaQuery.of(context).size.height *
+0.72,
+child: Padding(
+padding:
+const EdgeInsets.all(20),
+child: Column(
+children: [
+const Text(
+"选择品牌",
+style: TextStyle(
+fontSize: 20,
+fontWeight:
+FontWeight.bold,
+),
+),
+
+const SizedBox(
+height: 20,
+),
+
+Expanded(
+child: Row(
+children: [
+Container(
+width: 96,
+decoration:
+BoxDecoration(
+color: Theme.of(
+context,
+)
+.colorScheme
+.surfaceContainerHighest,
+borderRadius:
+BorderRadius
+.circular(
+18,
+),
+),
+child:
+ListView.builder(
+itemCount:
+categories.length,
+itemBuilder: (_, i) {
+final name =
+categories[i]
+["name"]
+.toString();
+
+final selected =
+name ==
+currentCategory;
+
+final disabled =
+name == "饮品"
+? drinkLocked
+: normalLocked;
+
+return GestureDetector(
+onTap: disabled
+? null
+: () {
+setSheet(() {
+currentCategory =
+name;
+});
+},
+child: Opacity(
+opacity:
+disabled
+? 0.35
+: 1,
+child:
+Container(
+height: 50,
+alignment:
+Alignment
+.center,
+decoration:
+BoxDecoration(
+color: selected
+? Theme.of(
+context,
+)
+.colorScheme
+.primary
+: Colors
+.transparent,
+borderRadius:
+BorderRadius
+.circular(
+14,
+),
+),
+child: Text(
+name,
+textAlign:
+TextAlign
+.center,
+style:
+TextStyle(
+fontSize:
+13,
+fontWeight:
+FontWeight
+.w600,
+color: selected
+? Theme.of(
+context,
+)
+.colorScheme
+.onPrimary
+: Theme.of(
+context,
+)
+.colorScheme
+.onSurface,
+),
+),
+),
+),
+);
+},
+),
+),
+
+const SizedBox(
+width: 14,
+),
+
+Expanded(
+child:
+ListView(
+children:
+visibleBrands
+.map(
+(b) {
+final isDrinkBrand =
+b["category"] ==
+"饮品";
+
+final disabled =
+isDrinkBrand
+? drinkLocked
+: normalLocked;
+
+final brandId =
+b["id"] as int;
+
+return CheckboxListTile(
+key: ValueKey(
+"${currentCategory}_$brandId",
+),
+value:
+tempBrands
+.contains(
+brandId,
+),
+activeColor:
+Theme.of(
+context,
+)
+.colorScheme
+.primary,
+title: Opacity(
+opacity:
+disabled
+? 0.35
+: 1,
+child: Text(
+b["name"]
+.toString(),
+),
+),
+controlAffinity:
+ListTileControlAffinity
+.leading,
+onChanged:
+disabled
+? null
+: (_) {
+setSheet(
+() {
+tempBrands.contains(
+brandId,
+)
+? tempBrands
+.remove(
+brandId,
+)
+: tempBrands
+.add(
+brandId,
+);
+},
+);
+},
+);
+},
+).toList(),
+),
+),
+],
+),
+),
+
+const SizedBox(
+height: 12,
+),
+
+SizedBox(
+width:
+double.infinity,
+child: FilledButton(
+style:
+FilledButton.styleFrom(
+backgroundColor:
+Theme.of(
+context,
+)
+.colorScheme
+.primary,
+),
+onPressed: () {
+selectedBrands =
+Set<int>.from(
+tempBrands,
+);
+
+selectedCategories =
+tempBrands
+.map(
+(id) {
+final matches =
+brands.where(
+(e) =>
+e["id"] ==
+id,
+);
+
+if (matches
+.isEmpty) {
+return null;
+}
+
+return matches
+.first["category"]
+?.toString();
+},
+)
+.whereType<String>()
+.toSet();
+
+Navigator.pop(
+context,
+);
+
+filterFoods();
+},
+child:
+const Text("完成"),
+),
+),
+],
+),
+),
+);
+},
+);
+},
+);
+}
   // ==================== 热量区间 ====================
 
   Future<void> chooseRange() async {
-    final temp = Set<String>.from(selectedRanges);
+    final temp =
+    Set<String>.from(selectedRanges);
 
-    final selectedDrinkBrand = selectedBrands.any(
-      (id) => brands.firstWhere(
-        (b) => b["id"] == id,
-      )["category"] == "饮品",
+    final selectedDrinkBrand =
+    selectedBrands.any(
+          (id) {
+        final brandMatches = brands.where(
+              (b) => b["id"] == id,
+        );
+
+        if (brandMatches.isEmpty) {
+          return false;
+        }
+
+        return brandMatches.first["category"] ==
+            "饮品";
+      },
     );
 
-    final selectedDrinkRange = selectedRanges.any(
-      (r) =>
-          r == "0-150" ||
+    final selectedDrinkRange =
+    selectedRanges.any(
+          (r) =>
+      r == "0-150" ||
           r == "150-220" ||
           r == "220-300" ||
           r == "300+",
     );
 
-    final isDrinkMode = selectedDrinkBrand ||
-        (selectedBrands.isEmpty && selectedDrinkRange);
+    final isDrinkMode =
+        selectedDrinkBrand ||
+            (selectedBrands.isEmpty &&
+                selectedDrinkRange);
 
     final ranges = isDrinkMode
         ? const [
-            "0-150",
-            "150-220",
-            "220-300",
-            "300+",
-          ]
+      "0-150",
+      "150-220",
+      "220-300",
+      "300+",
+    ]
         : const [
-            "0-300",
-            "300-400",
-            "400-500",
-            "500+",
-          ];
+      "0-300",
+      "300-400",
+      "400-500",
+      "500+",
+    ];
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
+      backgroundColor:
+      Theme.of(context)
+          .colorScheme
+          .surface,
+      shape:
+      const RoundedRectangleBorder(
+        borderRadius:
+        BorderRadius.vertical(
           top: Radius.circular(28),
         ),
       ),
       builder: (_) {
         return StatefulBuilder(
-          builder: (context, setSheet) {
+          builder:
+              (context, setSheet) {
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding:
+                const EdgeInsets.all(20),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize:
+                  MainAxisSize.min,
                   children: [
                     const Text(
                       "热量区间",
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight:
+                        FontWeight.bold,
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(
+                      height: 16,
+                    ),
 
                     ...ranges.map((r) {
                       return CheckboxListTile(
-                        value: temp.contains(r),
-                        activeColor: Theme.of(context).colorScheme.primary,
+                        value:
+                        temp.contains(r),
+                        activeColor:
+                        Theme.of(
+                          context,
+                        )
+                            .colorScheme
+                            .primary,
                         title: Text(r),
                         onChanged: (_) {
                           setSheet(() {
@@ -1138,22 +1391,38 @@ class _WheelPageState extends State<WheelPage>
                       );
                     }),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(
+                      height: 10,
+                    ),
 
                     SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                      width:
+                      double.infinity,
+                      child:
+                      FilledButton(
+                        style:
+                        FilledButton.styleFrom(
+                          backgroundColor:
+                          Theme.of(
+                            context,
+                          )
+                              .colorScheme
+                              .primary,
                         ),
                         onPressed: () {
-                          selectedRanges = temp;
+                          selectedRanges =
+                          Set<String>.from(
+                            temp,
+                          );
 
-                          Navigator.pop(context);
+                          Navigator.pop(
+                            context,
+                          );
 
                           filterFoods();
                         },
-                        child: const Text("完成"),
+                        child:
+                        const Text("完成"),
                       ),
                     ),
                   ],
@@ -1172,10 +1441,12 @@ class _WheelPageState extends State<WheelPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
-      Theme.of(context).scaffoldBackgroundColor,
+      Theme.of(context)
+          .scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
+          padding:
+          const EdgeInsets.fromLTRB(
             16,
             12,
             16,
@@ -1192,14 +1463,19 @@ class _WheelPageState extends State<WheelPage>
               Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
+                    child:
+                    GestureDetector(
                       onTap:
                       chooseCategoryBrand,
                       child: Container(
                         height: 46,
                         decoration:
                         BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Theme.of(
+                            context,
+                          )
+                              .colorScheme
+                              .surface,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1211,10 +1487,15 @@ class _WheelPageState extends State<WheelPage>
                           MainAxisAlignment
                               .center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons
                                   .restaurant_menu,
                               size: 18,
+                              color: Theme.of(
+                                context,
+                              )
+                                  .colorScheme
+                                  .onSurface,
                             ),
                             const SizedBox(
                               width: 6,
@@ -1225,10 +1506,15 @@ class _WheelPageState extends State<WheelPage>
                                   ? "分类・品牌"
                                   : "${selectedBrands.length} 个品牌",
                               style:
-                              const TextStyle(
+                              TextStyle(
                                 fontWeight:
                                 FontWeight
                                     .w600,
+                                color: Theme.of(
+                                  context,
+                                )
+                                    .colorScheme
+                                    .onSurface,
                               ),
                             ),
                           ],
@@ -1237,16 +1523,24 @@ class _WheelPageState extends State<WheelPage>
                     ),
                   ),
 
-                  const SizedBox(width: 10),
+                  const SizedBox(
+                    width: 10,
+                  ),
 
                   Expanded(
-                    child: GestureDetector(
-                      onTap: chooseRange,
+                    child:
+                    GestureDetector(
+                      onTap:
+                      chooseRange,
                       child: Container(
                         height: 46,
                         decoration:
                         BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Theme.of(
+                            context,
+                          )
+                              .colorScheme
+                              .surface,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1258,10 +1552,15 @@ class _WheelPageState extends State<WheelPage>
                           MainAxisAlignment
                               .center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons
                                   .local_fire_department,
                               size: 18,
+                              color: Theme.of(
+                                context,
+                              )
+                                  .colorScheme
+                                  .onSurface,
                             ),
                             const SizedBox(
                               width: 6,
@@ -1272,10 +1571,15 @@ class _WheelPageState extends State<WheelPage>
                                   ? "热量区间"
                                   : "${selectedRanges.length} 个区间",
                               style:
-                              const TextStyle(
+                              TextStyle(
                                 fontWeight:
                                 FontWeight
                                     .w600,
+                                color: Theme.of(
+                                  context,
+                                )
+                                    .colorScheme
+                                    .onSurface,
                               ),
                             ),
                           ],
@@ -1286,17 +1590,24 @@ class _WheelPageState extends State<WheelPage>
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(
+                height: 16,
+              ),
 
               // ===== 预设方案 =====
               Row(
                 children: [
-                  const Text(
+                  Text(
                     "预设方案",
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight:
                       FontWeight.w700,
+                      color: Theme.of(
+                        context,
+                      )
+                          .colorScheme
+                          .onSurface,
                     ),
                   ),
 
@@ -1305,9 +1616,14 @@ class _WheelPageState extends State<WheelPage>
                   IconButton(
                     onPressed:
                     createPreset,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.add,
                       size: 22,
+                      color: Theme.of(
+                        context,
+                      )
+                          .colorScheme
+                          .onSurface,
                     ),
                   ),
                 ],
@@ -1319,13 +1635,22 @@ class _WheelPageState extends State<WheelPage>
                     ? Center(
                   child: Text(
                     "点击 + 保存当前筛选方案",
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                    style:
+                    TextStyle(
+                      color: Theme.of(
+                        context,
+                      )
+                          .colorScheme
+                          .onSurface
+                          .withValues(
+                        alpha: .55,
+                      ),
                       fontSize: 12,
                     ),
                   ),
                 )
-                    : ListView.separated(
+                    : ListView
+                    .separated(
                   scrollDirection:
                   Axis.horizontal,
                   itemCount:
@@ -1360,9 +1685,11 @@ class _WheelPageState extends State<WheelPage>
                         ),
                         decoration:
                         BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xff2C2C2E)
-                              : Colors.white,
+                          color: Theme.of(
+                            context,
+                          )
+                              .colorScheme
+                              .surfaceContainerHighest,
                           borderRadius:
                           BorderRadius
                               .circular(
@@ -1372,9 +1699,14 @@ class _WheelPageState extends State<WheelPage>
                         child: Row(
                           children: [
                             Icon(
-                              Icons.bookmark,
+                              Icons
+                                  .bookmark,
                               size: 16,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: Theme.of(
+                                context,
+                              )
+                                  .colorScheme
+                                  .onSurface,
                             ),
                             const SizedBox(
                               width: 6,
@@ -1382,9 +1714,16 @@ class _WheelPageState extends State<WheelPage>
                             Text(
                               preset[
                               "name"],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
+                              style:
+                              TextStyle(
+                                fontWeight:
+                                FontWeight
+                                    .w600,
+                                color: Theme.of(
+                                  context,
+                                )
+                                    .colorScheme
+                                    .onSurface,
                               ),
                             ),
                           ],
@@ -1413,9 +1752,14 @@ class _WheelPageState extends State<WheelPage>
                           ),
                           painter:
                           WheelPainter(
-                             wheelFoods,
-                             isDark: Theme.of(context).brightness == Brightness.dark,
-                           ),
+                            wheelFoods,
+                            isDark:
+                            Theme.of(
+                              context,
+                            ).brightness ==
+                                Brightness
+                                    .dark,
+                          ),
                         ),
                       ),
 
@@ -1437,12 +1781,15 @@ class _WheelPageState extends State<WheelPage>
                             pointerOffset,
                             0,
                           ),
-                          child:
-                          Icon(
+                          child: Icon(
                             Icons
                                 .arrow_drop_down,
                             size: 42,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Theme.of(
+                              context,
+                            )
+                                .colorScheme
+                                .primary,
                           ),
                         ),
                       ),
@@ -1451,13 +1798,16 @@ class _WheelPageState extends State<WheelPage>
                         onTap: spinning
                             ? null
                             : spinWheel,
-                        child:
-                        Container(
+                        child: Container(
                           width: 74,
                           height: 74,
                           decoration:
                           BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Theme.of(
+                              context,
+                            )
+                                .colorScheme
+                                .primary,
                             shape:
                             BoxShape
                                 .circle,
@@ -1476,15 +1826,18 @@ class _WheelPageState extends State<WheelPage>
                               spinning
                                   ? "..."
                                   : "GO",
-                              key: ValueKey(
+                              key:
+                              ValueKey(
                                 spinning,
                               ),
                               style:
-                              const TextStyle(
-                                color: Colors
-                                    .white,
-                                fontSize:
-                                18,
+                              TextStyle(
+                                color: Theme.of(
+                                  context,
+                                )
+                                    .colorScheme
+                                    .onPrimary,
+                                fontSize: 18,
                                 fontWeight:
                                 FontWeight
                                     .w700,
@@ -1506,14 +1859,22 @@ class _WheelPageState extends State<WheelPage>
                 children: [
                   Text(
                     "共 ${candidates.length} 个候选产品",
-                    style:
-                    TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      )
+                          .colorScheme
+                          .onSurface
+                          .withValues(
+                        alpha: .55,
+                      ),
                       fontSize: 12,
                     ),
                   ),
 
-                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 8,
+                  ),
 
                   GestureDetector(
                     onTap:
@@ -1527,35 +1888,47 @@ class _WheelPageState extends State<WheelPage>
                       ),
                       decoration:
                       BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Theme.of(
+                          context,
+                        )
+                            .colorScheme
+                            .surface,
                         borderRadius:
                         BorderRadius
                             .circular(
                           14,
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize:
-                        MainAxisSize
-                            .min,
+                        MainAxisSize.min,
                         children: [
                           Icon(
                             Icons
                                 .list_alt_outlined,
                             size: 14,
+                            color: Theme.of(
+                              context,
+                            )
+                                .colorScheme
+                                .onSurface,
                           ),
-                          SizedBox(
+                          const SizedBox(
                             width: 4,
                           ),
                           Text(
                             "查看产品",
                             style:
                             TextStyle(
-                              fontSize:
-                              12,
+                              fontSize: 12,
                               fontWeight:
                               FontWeight
                                   .w600,
+                              color: Theme.of(
+                                context,
+                              )
+                                  .colorScheme
+                                  .onSurface,
                             ),
                           ),
                         ],
@@ -1565,7 +1938,9 @@ class _WheelPageState extends State<WheelPage>
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(
+                height: 10,
+              ),
 
               // ===== 结果 =====
               Container(
@@ -1579,7 +1954,11 @@ class _WheelPageState extends State<WheelPage>
                 ),
                 decoration:
                 BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Theme.of(
+                    context,
+                  )
+                      .colorScheme
+                      .surface,
                   borderRadius:
                   BorderRadius
                       .circular(
@@ -1587,7 +1966,7 @@ class _WheelPageState extends State<WheelPage>
                   ),
                 ),
                 child: resultFood.isEmpty
-                    ? const Center(
+                    ? Center(
                   child: Text(
                     "点击 GO 开始",
                     style:
@@ -1596,6 +1975,11 @@ class _WheelPageState extends State<WheelPage>
                       fontWeight:
                       FontWeight
                           .bold,
+                      color: Theme.of(
+                        context,
+                      )
+                          .colorScheme
+                          .onSurface,
                     ),
                   ),
                 )
@@ -1606,12 +1990,18 @@ class _WheelPageState extends State<WheelPage>
                       MainAxisAlignment
                           .center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons
                               .storefront,
                           size: 14,
-                          color: Colors
-                              .grey,
+                          color: Theme.of(
+                            context,
+                          )
+                              .colorScheme
+                              .onSurface
+                              .withValues(
+                            alpha: .55,
+                          ),
                         ),
                         const SizedBox(
                           width: 4,
@@ -1619,11 +2009,16 @@ class _WheelPageState extends State<WheelPage>
                         Text(
                           resultBrand,
                           style:
-                          const TextStyle(
-                            color: Colors
-                                .grey,
-                            fontSize:
-                            13,
+                          TextStyle(
+                            color: Theme.of(
+                              context,
+                            )
+                                .colorScheme
+                                .onSurface
+                                .withValues(
+                              alpha: .55,
+                            ),
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -1639,11 +2034,16 @@ class _WheelPageState extends State<WheelPage>
                       TextAlign
                           .center,
                       style:
-                      const TextStyle(
+                      TextStyle(
                         fontSize: 22,
                         fontWeight:
                         FontWeight
                             .bold,
+                        color: Theme.of(
+                          context,
+                        )
+                            .colorScheme
+                            .onSurface,
                       ),
                     ),
 
@@ -1654,11 +2054,16 @@ class _WheelPageState extends State<WheelPage>
                     Text(
                       "$resultCalories kcal",
                       style:
-                      const TextStyle(
+                      TextStyle(
                         fontSize: 16,
                         fontWeight:
                         FontWeight
                             .w600,
+                        color: Theme.of(
+                          context,
+                        )
+                            .colorScheme
+                            .onSurface,
                       ),
                     ),
                   ],
@@ -1677,20 +2082,26 @@ class WheelPainter extends CustomPainter {
   final bool isDark;
 
   WheelPainter(
-    this.foods, {
-    required this.isDark,
-  });
+      this.foods, {
+        required this.isDark,
+      });
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(
+      Canvas canvas,
+      Size size,
+      ) {
     final center = Offset(
       size.width / 2,
       size.height / 2,
     );
 
-    final radius = size.width / 2;
+    final radius =
+        size.width / 2;
 
-    final fill = Paint()..style = PaintingStyle.fill;
+    final fill = Paint()
+      ..style =
+          PaintingStyle.fill;
 
     final divider = Paint()
       ..color = isDark
@@ -1699,16 +2110,20 @@ class WheelPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     final outline = Paint()
-      ..color = isDark ? Colors.white : Colors.black
-      ..style = PaintingStyle.stroke
+      ..color = isDark
+          ? Colors.white
+          : Colors.black
+      ..style =
+          PaintingStyle.stroke
       ..strokeWidth = 2;
 
     canvas.drawCircle(
       center,
       radius + 4,
-      Paint()..color = isDark
-          ? const Color(0x33000000)
-          : const Color(0x14000000),
+      Paint()
+        ..color = isDark
+            ? const Color(0x33000000)
+            : const Color(0x14000000),
     );
 
     if (foods.isEmpty) {
@@ -1716,90 +2131,170 @@ class WheelPainter extends CustomPainter {
           ? const Color(0xFF1C1C1E)
           : Colors.white;
 
-      canvas.drawCircle(center, radius, fill);
-      canvas.drawCircle(center, radius, outline);
+      canvas.drawCircle(
+        center,
+        radius,
+        fill,
+      );
+
+      canvas.drawCircle(
+        center,
+        radius,
+        outline,
+      );
 
       final tp = TextPainter(
         text: TextSpan(
           text: "暂无产品",
           style: TextStyle(
             fontSize: 18,
-            color: isDark ? Colors.white70 : Colors.black54,
-            fontWeight: FontWeight.w600,
+            color: isDark
+                ? Colors.white70
+                : Colors.black54,
+            fontWeight:
+            FontWeight.w600,
           ),
         ),
-        textDirection: TextDirection.ltr,
+        textDirection:
+        TextDirection.ltr,
       )..layout();
 
       tp.paint(
         canvas,
         Offset(
-          center.dx - tp.width / 2,
-          center.dy - tp.height / 2,
+          center.dx -
+              tp.width / 2,
+          center.dy -
+              tp.height / 2,
         ),
       );
 
       return;
     }
 
-    final count = foods.length;
-    final sweep = 2 * pi / count;
+    final count =
+        foods.length;
 
-    for (int i = 0; i < count; i++) {
+    final sweep =
+        2 * pi / count;
+
+    for (
+    int i = 0;
+    i < count;
+    i++
+    ) {
       fill.color = i.isEven
-          ? (isDark ? const Color(0xFF1C1C1E) : Colors.white)
-          : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF5F5F5));
+          ? (isDark
+          ? const Color(
+        0xFF1C1C1E,
+      )
+          : Colors.white)
+          : (isDark
+          ? const Color(
+        0xFF2C2C2E,
+      )
+          : const Color(
+        0xFFF5F5F5,
+      ));
 
       canvas.drawArc(
         Rect.fromCircle(
           center: center,
           radius: radius,
         ),
-        -pi / 2 + i * sweep,
+        -pi / 2 +
+            i * sweep,
         sweep,
         true,
         fill,
       );
     }
 
-    for (int i = 0; i < count; i++) {
-      final a = -pi / 2 + i * sweep;
+    for (
+    int i = 0;
+    i < count;
+    i++
+    ) {
+      final a =
+          -pi / 2 +
+              i * sweep;
 
       canvas.drawLine(
         center,
         Offset(
-          center.dx + cos(a) * radius,
-          center.dy + sin(a) * radius,
+          center.dx +
+              cos(a) *
+                  radius,
+          center.dy +
+              sin(a) *
+                  radius,
         ),
         divider,
       );
     }
 
-    for (int i = 0; i < count; i++) {
-      final a = -pi / 2 + i * sweep + sweep / 2;
+    for (
+    int i = 0;
+    i < count;
+    i++
+    ) {
+      final a =
+          -pi / 2 +
+              i * sweep +
+              sweep / 2;
 
-      final dx = center.dx + cos(a) * radius * 0.72;
-      final dy = center.dy + sin(a) * radius * 0.72;
+      final dx =
+          center.dx +
+              cos(a) *
+                  radius *
+                  0.72;
+
+      final dy =
+          center.dy +
+              sin(a) *
+                  radius *
+                  0.72;
 
       canvas.save();
-      canvas.translate(dx, dy);
-      canvas.rotate(a + pi / 2);
 
-      final lines = _split(foods[i]["name"].toString());
+      canvas.translate(
+        dx,
+        dy,
+      );
 
-      final tp = TextPainter(
+      canvas.rotate(
+        a + pi / 2,
+      );
+
+      final lines =
+      _split(
+        foods[i]["name"]
+            .toString(),
+      );
+
+      final tp =
+      TextPainter(
         text: TextSpan(
-          text: lines.join("\n"),
-          style: TextStyle(
+          text:
+          lines.join("\n"),
+          style:
+          TextStyle(
             fontSize: 10,
             height: 1.05,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : Colors.black,
+            fontWeight:
+            FontWeight.w700,
+            color: isDark
+                ? Colors.white
+                : Colors.black,
           ),
         ),
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: 56);
+        textAlign:
+        TextAlign.center,
+        textDirection:
+        TextDirection.ltr,
+      )..layout(
+        maxWidth: 56,
+      );
 
       tp.paint(
         canvas,
@@ -1812,10 +2307,16 @@ class WheelPainter extends CustomPainter {
       canvas.restore();
     }
 
-    canvas.drawCircle(center, radius, outline);
+    canvas.drawCircle(
+      center,
+      radius,
+      outline,
+    );
   }
 
-  List<String> _split(String name) {
+  List<String> _split(
+      String name,
+      ) {
     if (name.length <= 4) {
       return [name];
     }
@@ -1834,7 +2335,12 @@ class WheelPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant WheelPainter oldDelegate) {
-    return oldDelegate.foods != foods || oldDelegate.isDark != isDark;
+  bool shouldRepaint(
+      covariant WheelPainter
+      oldDelegate,
+      ) {
+    return oldDelegate.foods != foods ||
+        oldDelegate.isDark !=
+            isDark;
   }
 }
