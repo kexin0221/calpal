@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../database/database_helper.dart';
@@ -32,11 +33,21 @@ class _HomePageState extends State<HomePage> {
     loadData();
   }
 
-  /// 加载分类 + 品牌
+  /// 加载分类和品牌
   Future<void> loadData() async {
     final categoryData = await db.getCategories();
 
-    if (categoryData.isEmpty) return;
+    if (!mounted) return;
+
+    if (categoryData.isEmpty) {
+      setState(() {
+        categories = [];
+        brands = [];
+        filteredCategories = [];
+        selectedCategory = "";
+      });
+      return;
+    }
 
     if (selectedCategory.isEmpty ||
         !categoryData.any((e) => e["name"] == selectedCategory)) {
@@ -45,6 +56,8 @@ class _HomePageState extends State<HomePage> {
 
     final brandData = await db.getBrands(selectedCategory);
 
+    if (!mounted) return;
+
     setState(() {
       categories = categoryData;
       filteredCategories = List.from(categoryData);
@@ -52,9 +65,9 @@ class _HomePageState extends State<HomePage> {
       brands = brandData
           .where(
             (e) => e["name"].toString().toLowerCase().contains(
-              searchText.toLowerCase(),
-            ),
-          )
+          searchText.toLowerCase(),
+        ),
+      )
           .toList();
     });
   }
@@ -62,26 +75,37 @@ class _HomePageState extends State<HomePage> {
   Future<void> refreshWheel() async {
     await loadData();
 
+    if (!mounted) return;
+
     setState(() {
       wheelRefreshKey++;
     });
   }
 
   Future<void> loadBrands() async {
+    if (selectedCategory.isEmpty) {
+      if (mounted) {
+        setState(() {
+          brands = [];
+        });
+      }
+      return;
+    }
+
     final brandData = await db.getBrands(selectedCategory);
+
+    if (!mounted) return;
 
     setState(() {
       if (searchText.isEmpty) {
-        // 正常状态：显示当前分类全部品牌
         brands = brandData;
       } else {
-        // 搜索状态：只显示匹配品牌
         brands = brandData
             .where(
               (e) => e["name"].toString().toLowerCase().contains(
-                searchText.toLowerCase(),
-              ),
-            )
+            searchText.toLowerCase(),
+          ),
+        )
             .toList();
       }
     });
@@ -90,11 +114,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> searchBrands(String keyword) async {
     searchText = keyword.trim();
 
-    // 清空搜索：恢复全部分类
     if (searchText.isEmpty) {
       filteredCategories = List.from(categories);
 
-      if (!filteredCategories.any((e) => e["name"] == selectedCategory)) {
+      if (filteredCategories.isNotEmpty &&
+          !filteredCategories.any((e) => e["name"] == selectedCategory)) {
         selectedCategory = filteredCategories.first["name"];
       }
 
@@ -104,22 +128,23 @@ class _HomePageState extends State<HomePage> {
 
     final result = <Map<String, dynamic>>[];
 
-    // 按原分类顺序查找
     for (final category in categories) {
       final list = await db.getBrands(category["name"] as String);
 
       final matched = list
           .where(
             (e) => e["name"].toString().toLowerCase().contains(
-              searchText.toLowerCase(),
-            ),
-          )
+          searchText.toLowerCase(),
+        ),
+      )
           .toList();
 
       if (matched.isNotEmpty) {
         result.add(category);
       }
     }
+
+    if (!mounted) return;
 
     if (result.isEmpty) {
       setState(() {
@@ -133,19 +158,23 @@ class _HomePageState extends State<HomePage> {
 
     final firstBrands = await db.getBrands(selectedCategory);
 
+    if (!mounted) return;
+
     setState(() {
       filteredCategories = result;
       brands = firstBrands
           .where(
             (e) => e["name"].toString().toLowerCase().contains(
-              searchText.toLowerCase(),
-            ),
-          )
+          searchText.toLowerCase(),
+        ),
+      )
           .toList();
     });
   }
 
   Future<void> openAddBrand() async {
+    if (selectedCategory.isEmpty) return;
+
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -154,7 +183,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (result == true) {
-      loadBrands();
+      await loadBrands();
     }
   }
 
@@ -169,9 +198,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
         index: bottomIndex == 2 ? 1 : 0,
         children: [
@@ -180,7 +211,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const SizedBox(height: 8),
 
-                // 搜索 + 设置
+                // 搜索和设置
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
@@ -189,17 +220,25 @@ class _HomePageState extends State<HomePage> {
                         child: Container(
                           height: 48,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: TextField(
                             textAlignVertical: TextAlignVertical.center,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                            ),
                             onChanged: searchBrands,
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.search),
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.65,
+                                ),
+                              ),
                               border: InputBorder.none,
                               isCollapsed: true,
-                              contentPadding: EdgeInsets.symmetric(
+                              contentPadding: const EdgeInsets.symmetric(
                                 vertical: 12,
                               ),
                             ),
@@ -216,19 +255,21 @@ class _HomePageState extends State<HomePage> {
                             ),
                           );
 
-                          await loadData(); // 刷新热量库
-                          await refreshWheel(); // 刷新转盘
+                          if (!mounted) return;
+
+                          await loadData();
+                          await refreshWheel();
                         },
                         child: Container(
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: colorScheme.primary,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.settings,
-                            color: Theme.of(context).colorScheme.onPrimary,
+                            color: colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -241,19 +282,23 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: Row(
                     children: [
-                      // ===== 左侧分类 =====
+                      // 左侧分类
                       Container(
                         width: 112,
-                        margin: const EdgeInsets.only(left: 14, bottom: 12),
+                        margin: const EdgeInsets.only(
+                          left: 14,
+                          bottom: 12,
+                        ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: colorScheme.surface,
                           borderRadius: BorderRadius.circular(28),
                         ),
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           itemCount: filteredCategories.length,
                           itemBuilder: (_, index) {
-                            final category = filteredCategories[index]["name"];
+                            final category =
+                            filteredCategories[index]["name"];
                             final selected = category == selectedCategory;
 
                             return GestureDetector(
@@ -271,7 +316,7 @@ class _HomePageState extends State<HomePage> {
                                 height: 52,
                                 decoration: BoxDecoration(
                                   color: selected
-                                      ? Theme.of(context).colorScheme.primary
+                                      ? colorScheme.primary
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(18),
                                 ),
@@ -289,8 +334,9 @@ class _HomePageState extends State<HomePage> {
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: selected
-                                                ? Theme.of(context).colorScheme.onPrimary
-                                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: .87),
+                                                ? colorScheme.onPrimary
+                                                : colorScheme.onSurface
+                                                .withValues(alpha: 0.87),
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
                                           ),
@@ -301,7 +347,8 @@ class _HomePageState extends State<HomePage> {
                                         Text(
                                           "${brands.length}",
                                           style: TextStyle(
-                                            color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: .70),
+                                            color: colorScheme.onPrimary
+                                                .withValues(alpha: 0.70),
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -318,111 +365,123 @@ class _HomePageState extends State<HomePage> {
 
                       const SizedBox(width: 12),
 
-                      // ===== 右侧品牌 =====
+                      // 右侧品牌
                       Expanded(
                         child: Container(
-                          margin: const EdgeInsets.only(right: 14, bottom: 12),
+                          margin: const EdgeInsets.only(
+                            right: 14,
+                            bottom: 12,
+                          ),
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: colorScheme.surface,
                             borderRadius: BorderRadius.circular(28),
                           ),
                           child: brands.isEmpty
                               ? Center(
-                                  child: Text(
-                                    "暂无品牌\n点击下方 + 添加",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
-                                  ),
-                                )
+                            child: Text(
+                              "暂无品牌\n点击下方 + 添加",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.55,
+                                ),
+                              ),
+                            ),
+                          )
                               : ListView.builder(
-                                  itemCount: brands.length,
-                                  itemBuilder: (_, i) {
-                                    final brand = brands[i];
+                            itemCount: brands.length,
+                            itemBuilder: (_, i) {
+                              final brand = brands[i];
 
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 10,
-                                      ),
-                                      child: Material(
-                                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(18),
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 10,
+                                ),
+                                child: Material(
+                                  color: theme.brightness == Brightness.dark
+                                      ? const Color(0xFF2C2C2E)
+                                      : const Color(0xFFFAFAFA),
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: InkWell(
+                                    borderRadius:
+                                    BorderRadius.circular(18),
+                                    onTap: () async {
+                                      final result =
+                                      await Navigator.push<bool>(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BrandPage(
+                                            brandId: brand["id"],
+                                            brandName: brand["name"],
+                                            category: selectedCategory,
                                           ),
-                                          onTap: () async {
-                                            final result =
-                                                await Navigator.push<bool>(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => BrandPage(
-                                                      brandId: brand["id"],
-                                                      brandName: brand["name"],
-                                                      category:
-                                                          selectedCategory,
-                                                    ),
-                                                  ),
-                                                );
+                                        ),
+                                      );
 
-                                            if (result == true) {
-                                              await loadBrands();
-                                            }
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 18,
-                                              vertical: 18,
-                                            ),
+                                      if (result == true) {
+                                        await loadBrands();
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 18,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
                                             child: Row(
                                               children: [
-                                                Expanded(
-                                                  child: Row(
-                                                    children: [
-                                                      if ((brand["isTop"] ??
-                                                              0) ==
-                                                          1)
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                right: 6,
-                                                              ),
-                                                          child: Icon(
-                                                            Icons.push_pin,
-                                                            size: 14,
-                                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
-                                                          ),
-                                                        ),
-
-                                                      Expanded(
-                                                        child: Text(
-                                                          brand["name"],
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 18,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                        ),
+                                                if ((brand["isTop"] ??
+                                                    0) ==
+                                                    1)
+                                                  Padding(
+                                                    padding:
+                                                    const EdgeInsets
+                                                        .only(
+                                                      right: 6,
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.push_pin,
+                                                      size: 14,
+                                                      color: colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                        alpha: 0.55,
                                                       ),
-                                                    ],
+                                                    ),
                                                   ),
-                                                ),
-                                                Icon(
-                                                  Icons.chevron_right,
-                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                                                Expanded(
+                                                  child: Text(
+                                                    brand["name"],
+                                                    style: TextStyle(
+                                                      color: colorScheme
+                                                          .onSurface,
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                      FontWeight.w600,
+                                                    ),
+                                                    overflow: TextOverflow
+                                                        .ellipsis,
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                        ),
+                                          Icon(
+                                            Icons.chevron_right,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.55),
+                                          ),
+                                        ],
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ),
                                 ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -432,7 +491,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // ===== 转盘页 =====
+          // 转盘页
           WheelPage(key: ValueKey(wheelRefreshKey)),
         ],
       ),
@@ -443,7 +502,7 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           height: 72,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withValues(alpha: .92),
+            color: colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
@@ -460,6 +519,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget navItem(IconData icon, String text, int index) {
+    final colorScheme = Theme.of(context).colorScheme;
     final selected = bottomIndex == index;
 
     return GestureDetector(
@@ -467,6 +527,8 @@ class _HomePageState extends State<HomePage> {
         if (index == 2) {
           await refreshWheel();
         }
+
+        if (!mounted) return;
 
         setState(() {
           bottomIndex = index;
@@ -477,18 +539,25 @@ class _HomePageState extends State<HomePage> {
         width: 108,
         height: 54,
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          color: selected ? colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
+            Icon(
+              icon,
+              color: selected
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurface.withValues(alpha: 0.55),
+            ),
             const SizedBox(height: 2),
             Text(
               text,
               style: TextStyle(
-                color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                color: selected
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface.withValues(alpha: 0.55),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -500,16 +569,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget addButton() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: selectedCategory.isEmpty ? null : openAddBrand,
       child: Container(
         width: 58,
         height: 58,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
+          color: colorScheme.primary,
           shape: BoxShape.circle,
         ),
-        child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary, size: 30),
+        child: Icon(
+          Icons.add,
+          color: colorScheme.onPrimary,
+          size: 30,
+        ),
       ),
     );
   }
