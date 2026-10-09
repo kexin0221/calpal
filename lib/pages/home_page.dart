@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../database/database_helper.dart';
@@ -26,6 +25,7 @@ class _HomePageState extends State<HomePage> {
   String searchText = "";
   int bottomIndex = 0;
   int wheelRefreshKey = 0;
+  int searchRequestId = 0;
 
   @override
   void initState() {
@@ -35,9 +35,10 @@ class _HomePageState extends State<HomePage> {
 
   /// 加载分类和品牌
   Future<void> loadData() async {
+    final requestId = ++searchRequestId;
     final categoryData = await db.getCategories();
 
-    if (!mounted) return;
+    if (!mounted || requestId != searchRequestId) return;
 
     if (categoryData.isEmpty) {
       setState(() {
@@ -56,7 +57,7 @@ class _HomePageState extends State<HomePage> {
 
     final brandData = await db.getBrands(selectedCategory);
 
-    if (!mounted) return;
+    if (!mounted || requestId != searchRequestId) return;
 
     setState(() {
       categories = categoryData;
@@ -64,9 +65,10 @@ class _HomePageState extends State<HomePage> {
 
       brands = brandData
           .where(
-            (e) => e["name"].toString().toLowerCase().contains(
-          searchText.toLowerCase(),
-        ),
+            (e) => e["name"]
+            .toString()
+            .toLowerCase()
+            .contains(searchText.toLowerCase()),
       )
           .toList();
     });
@@ -83,8 +85,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> loadBrands() async {
-    if (selectedCategory.isEmpty) {
-      if (mounted) {
+    final requestId = ++searchRequestId;
+    final category = selectedCategory;
+
+    if (category.isEmpty) {
+      if (mounted && requestId == searchRequestId) {
         setState(() {
           brands = [];
         });
@@ -92,9 +97,9 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final brandData = await db.getBrands(selectedCategory);
+    final brandData = await db.getBrands(category);
 
-    if (!mounted) return;
+    if (!mounted || requestId != searchRequestId) return;
 
     setState(() {
       if (searchText.isEmpty) {
@@ -102,9 +107,10 @@ class _HomePageState extends State<HomePage> {
       } else {
         brands = brandData
             .where(
-              (e) => e["name"].toString().toLowerCase().contains(
-            searchText.toLowerCase(),
-          ),
+              (e) => e["name"]
+              .toString()
+              .toLowerCase()
+              .contains(searchText.toLowerCase()),
         )
             .toList();
       }
@@ -112,7 +118,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> searchBrands(String keyword) async {
+    final requestId = ++searchRequestId;
     searchText = keyword.trim();
+    final currentSearchText = searchText.toLowerCase();
 
     if (searchText.isEmpty) {
       filteredCategories = List.from(categories);
@@ -122,7 +130,24 @@ class _HomePageState extends State<HomePage> {
         selectedCategory = filteredCategories.first["name"];
       }
 
-      await loadBrands();
+      final category = selectedCategory;
+
+      if (category.isEmpty) {
+        if (!mounted || requestId != searchRequestId) return;
+
+        setState(() {
+          brands = [];
+        });
+        return;
+      }
+
+      final brandData = await db.getBrands(category);
+
+      if (!mounted || requestId != searchRequestId) return;
+
+      setState(() {
+        brands = brandData;
+      });
       return;
     }
 
@@ -131,11 +156,14 @@ class _HomePageState extends State<HomePage> {
     for (final category in categories) {
       final list = await db.getBrands(category["name"] as String);
 
+      if (!mounted || requestId != searchRequestId) return;
+
       final matched = list
           .where(
-            (e) => e["name"].toString().toLowerCase().contains(
-          searchText.toLowerCase(),
-        ),
+            (e) => e["name"]
+            .toString()
+            .toLowerCase()
+            .contains(currentSearchText),
       )
           .toList();
 
@@ -144,7 +172,7 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    if (!mounted) return;
+    if (!mounted || requestId != searchRequestId) return;
 
     if (result.isEmpty) {
       setState(() {
@@ -154,19 +182,21 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    selectedCategory = result.first["name"];
+    final firstCategory = result.first["name"] as String;
+    final firstBrands = await db.getBrands(firstCategory);
 
-    final firstBrands = await db.getBrands(selectedCategory);
+    if (!mounted || requestId != searchRequestId) return;
 
-    if (!mounted) return;
+    selectedCategory = firstCategory;
 
     setState(() {
       filteredCategories = result;
       brands = firstBrands
           .where(
-            (e) => e["name"].toString().toLowerCase().contains(
-          searchText.toLowerCase(),
-        ),
+            (e) => e["name"]
+            .toString()
+            .toLowerCase()
+            .contains(currentSearchText),
       )
           .toList();
     });
@@ -399,10 +429,12 @@ class _HomePageState extends State<HomePage> {
                                   bottom: 10,
                                 ),
                                 child: Material(
-                                  color: theme.brightness == Brightness.dark
+                                  color: theme.brightness ==
+                                      Brightness.dark
                                       ? const Color(0xFF2C2C2E)
                                       : const Color(0xFFFAFAFA),
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius:
+                                  BorderRadius.circular(18),
                                   child: InkWell(
                                     borderRadius:
                                     BorderRadius.circular(18),

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
 
@@ -30,23 +31,12 @@ class CalPal extends StatelessWidget {
   }) {
     final isDark = brightness == Brightness.dark;
 
-    final background =
-    isDark ? darkBackground : lightBackground;
-
-    final surface =
-    isDark ? darkSurface : lightSurface;
-
-    final primary =
-    isDark ? darkPrimary : lightPrimary;
-
-    final onPrimary =
-    isDark ? darkOnPrimary : lightOnPrimary;
-
-    final onSurface =
-    isDark ? darkOnSurface : lightOnSurface;
-
-    final outline =
-    isDark ? darkOutline : lightOutline;
+    final background = isDark ? darkBackground : lightBackground;
+    final surface = isDark ? darkSurface : lightSurface;
+    final primary = isDark ? darkPrimary : lightPrimary;
+    final onPrimary = isDark ? darkOnPrimary : lightOnPrimary;
+    final onSurface = isDark ? darkOnSurface : lightOnSurface;
+    final outline = isDark ? darkOutline : lightOutline;
 
     final colorScheme = ColorScheme(
       brightness: brightness,
@@ -63,28 +53,48 @@ class CalPal extends StatelessWidget {
       error: Colors.red,
       onError: Colors.white,
 
-      // 页面/卡片主要背景
+      // 页面及卡片背景
       surface: surface,
       onSurface: onSurface,
 
       // 边框
       outline: outline,
 
-      // 禁止 Material 3 自动给组件叠加颜色
+      // 固定背景及前景
+      surfaceDim: isDark
+          ? const Color(0xff0A0A0C)
+          : const Color(0xffE8E8ED),
+      surfaceBright: isDark
+          ? const Color(0xff3A3A3C)
+          : Colors.white,
+
+      // Material 3 不同层级的表面颜色
+      surfaceContainerLowest: isDark
+          ? const Color(0xff0B0B0D)
+          : Colors.white,
+      surfaceContainerLow: isDark
+          ? const Color(0xff161618)
+          : const Color(0xffFAFAFC),
+      surfaceContainer: isDark
+          ? const Color(0xff1C1C1E)
+          : const Color(0xffF5F5F7),
+      surfaceContainerHigh: isDark
+          ? const Color(0xff252527)
+          : const Color(0xffEEEEF2),
+      surfaceContainerHighest: isDark
+          ? darkCard
+          : const Color(0xffE5E5EA),
+
+      // 禁止 Material 3 自动叠加表面色调
       surfaceTint: Colors.transparent,
     );
 
     return ThemeData(
       useMaterial3: true,
-
-      // ==================== 基础 ====================
-
       scaffoldBackgroundColor: background,
-
       colorScheme: colorScheme,
 
       // ==================== AppBar ====================
-
       appBarTheme: AppBarTheme(
         backgroundColor: background,
         foregroundColor: onSurface,
@@ -94,14 +104,12 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Card ====================
-
       cardTheme: CardThemeData(
         color: surface,
         surfaceTintColor: Colors.transparent,
       ),
 
       // ==================== Dialog ====================
-
       dialogTheme: DialogThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
@@ -120,7 +128,6 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Bottom Sheet ====================
-
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
@@ -132,7 +139,6 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Popup Menu ====================
-
       popupMenuTheme: PopupMenuThemeData(
         color: surface,
         surfaceTintColor: Colors.transparent,
@@ -147,7 +153,6 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Filled Button ====================
-
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: primary,
@@ -159,7 +164,6 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Elevated Button ====================
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
@@ -172,13 +176,10 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Outlined Button ====================
-
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: onSurface,
-          side: BorderSide(
-            color: outline,
-          ),
+          side: BorderSide(color: outline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -186,22 +187,17 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== 输入框 ====================
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-
         fillColor: surface,
-
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
         ),
-
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
         ),
-
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
@@ -209,42 +205,29 @@ class CalPal extends StatelessWidget {
             width: 1.2,
           ),
         ),
-
         hintStyle: TextStyle(
           color: onSurface.withValues(alpha: .5),
         ),
-
         labelStyle: TextStyle(
           color: onSurface.withValues(alpha: .7),
         ),
       ),
 
       // ==================== Checkbox ====================
-
       checkboxTheme: CheckboxThemeData(
-        fillColor: WidgetStateProperty.resolveWith(
-              (states) {
-            if (states.contains(WidgetState.selected)) {
-              return primary;
-            }
-
-            return Colors.transparent;
-          },
-        ),
-        checkColor: WidgetStatePropertyAll(
-          onPrimary,
-        ),
-        side: BorderSide(
-          color: outline,
-        ),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return primary;
+          }
+          return Colors.transparent;
+        }),
+        checkColor: WidgetStatePropertyAll(onPrimary),
+        side: BorderSide(color: outline),
       ),
 
       // ==================== SnackBar ====================
-
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark
-            ? darkCard
-            : Colors.grey.shade900,
+        backgroundColor: isDark ? darkCard : Colors.grey.shade900,
         contentTextStyle: const TextStyle(
           color: Colors.white,
         ),
@@ -255,7 +238,6 @@ class CalPal extends StatelessWidget {
       ),
 
       // ==================== Divider ====================
-
       dividerTheme: DividerThemeData(
         color: outline,
         thickness: 1,
@@ -269,13 +251,9 @@ class CalPal extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'CalPal',
 
-      // ==================== 浅色主题 ====================
-
       theme: _buildTheme(
         brightness: Brightness.light,
       ),
-
-      // ==================== 深色主题 ====================
 
       darkTheme: _buildTheme(
         brightness: Brightness.dark,

@@ -88,9 +88,6 @@ class _WheelPageState extends State<WheelPage>
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: "例如：学校、公司",
-          ),
         ),
         actions: [
           TextButton(
