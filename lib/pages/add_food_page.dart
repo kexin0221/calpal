@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 
@@ -57,61 +58,60 @@ class _AddFoodPageState extends State<AddFoodPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
           "添加产品",
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme: IconThemeData(
+          color: colorScheme.onSurface,
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "产品名称",
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: nameController,
-              decoration: InputDecoration(
-                hintText: "",
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
-                ),
+              style: TextStyle(
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               "热量（kcal）",
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: calorieController,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "",
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
-                ),
+              style: TextStyle(
+                color: colorScheme.onSurface,
               ),
             ),
             const Spacer(),
@@ -121,8 +121,8 @@ class _AddFoodPageState extends State<AddFoodPage> {
               child: ElevatedButton(
                 onPressed: saveFood,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(27),
                   ),
@@ -132,7 +132,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                   style: TextStyle(fontSize: 16),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

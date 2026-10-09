@@ -30,10 +30,22 @@ class _BrandPageState extends State<BrandPage> {
   String searchText = "";
 
   bool hasChanged = false;
-
   bool isTop = false;
 
   String brandRemark = "";
+
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  Color get pageCardColor =>
+      isDark ? const Color(0xFF2C2C2E) : const Color(0xFFFAFAFA);
+
+  Color get secondarySurfaceColor =>
+      Theme.of(context).colorScheme.surfaceContainerHighest;
+
+  Color get primaryTextColor => Theme.of(context).colorScheme.onSurface;
+
+  Color get secondaryTextColor =>
+      Theme.of(context).colorScheme.onSurface.withValues(alpha: .55);
 
   @override
   void initState() {
@@ -92,15 +104,11 @@ class _BrandPageState extends State<BrandPage> {
             return true;
           }
 
-          if (selectedFilters.contains("150-220") &&
-              c >= 150 &&
-              c < 220) {
+          if (selectedFilters.contains("150-220") && c >= 150 && c < 220) {
             return true;
           }
 
-          if (selectedFilters.contains("220-300") &&
-              c >= 220 &&
-              c < 300) {
+          if (selectedFilters.contains("220-300") && c >= 220 && c < 300) {
             return true;
           }
 
@@ -115,15 +123,11 @@ class _BrandPageState extends State<BrandPage> {
           return true;
         }
 
-        if (selectedFilters.contains("400-500") &&
-            c >= 400 &&
-            c < 500) {
+        if (selectedFilters.contains("400-500") && c >= 400 && c < 500) {
           return true;
         }
 
-        if (selectedFilters.contains("500-600") &&
-            c >= 500 &&
-            c < 600) {
+        if (selectedFilters.contains("500-600") && c >= 500 && c < 600) {
           return true;
         }
 
@@ -140,7 +144,9 @@ class _BrandPageState extends State<BrandPage> {
       return sortAscending ? result : -result;
     });
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> toggleTop() async {
@@ -155,9 +161,7 @@ class _BrandPageState extends State<BrandPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            !isTop ? "已取消置顶" : "已置顶",
-          ),
+          content: Text(!isTop ? "已取消置顶" : "已置顶"),
         ),
       );
     }
@@ -167,15 +171,23 @@ class _BrandPageState extends State<BrandPage> {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            AddFoodPage(brandId: widget.brandId, category: widget.category),
+        builder: (_) => AddFoodPage(
+          brandId: widget.brandId,
+          category: widget.category,
+        ),
       ),
     );
 
     if (result == true) {
       await loadFoods();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("产品添加成功")));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("产品添加成功"),
+          ),
+        );
+      }
     }
   }
 
@@ -184,39 +196,33 @@ class _BrandPageState extends State<BrandPage> {
 
     final result = await showDialog<String>(
       context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: const Text("品牌备注"),
-            content: TextField(
-              controller: controller,
-              maxLines: 5,
-              maxLength: 200,
-              decoration: const InputDecoration(
+      builder: (_) => AlertDialog(
+        title: const Text("品牌备注"),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          maxLength: 200,
+          decoration: const InputDecoration(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("取消"),
+          ),
+          if (brandRemark.isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.pop(context, ""),
+              child: const Text(
+                "删除",
+                style: TextStyle(color: Colors.red),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("取消"),
-              ),
-              if (brandRemark.isNotEmpty)
-                TextButton(
-                  onPressed: () => Navigator.pop(context, ""),
-                  child: const Text(
-                    "删除",
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              FilledButton(
-                onPressed: () =>
-                    Navigator.pop(
-                      context,
-                      controller.text.trim(),
-                    ),
-                child: const Text("保存"),
-              ),
-            ],
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text("保存"),
           ),
+        ],
+      ),
     );
 
     if (result == null) return;
@@ -237,35 +243,38 @@ class _BrandPageState extends State<BrandPage> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: const Text("编辑产品"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "产品名称"),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: calorieController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: "热量(kcal)"),
-                ),
-              ],
+      builder: (_) => AlertDialog(
+        title: const Text("编辑产品"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: "产品名称",
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("取消"),
+            const SizedBox(height: 12),
+            TextField(
+              controller: calorieController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "热量(kcal)",
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("保存"),
-              ),
-            ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("取消"),
           ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("保存"),
+          ),
+        ],
+      ),
     );
 
     if (ok != true) return;
@@ -287,28 +296,30 @@ class _BrandPageState extends State<BrandPage> {
   Future<void> deleteFood(Map<String, dynamic> food) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: const Text("删除产品"),
-            content: Text("确定删除「${food["name"]}」吗？"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("取消"),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("删除"),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text("删除产品"),
+        content: Text("确定删除「${food["name"]}」吗？"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("取消"),
           ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("删除"),
+          ),
+        ],
+      ),
     );
 
     if (ok != true) return;
 
     await DatabaseHelper.instance.deleteFood(food["id"]);
-    loadFoods();
+    await loadFoods();
   }
 
   Future<void> importCsv() async {
@@ -328,26 +339,26 @@ class _BrandPageState extends State<BrandPage> {
 
     final newName = await showDialog<String>(
       context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: const Text("修改品牌名"),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: "品牌名称"),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("取消"),
-              ),
-              FilledButton(
-                onPressed: () =>
-                    Navigator.pop(context, controller.text.trim()),
-                child: const Text("保存"),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text("修改品牌名"),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: "品牌名称",
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("取消"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text("保存"),
+          ),
+        ],
+      ),
     );
 
     if (newName == null || newName.isEmpty) return;
@@ -357,132 +368,146 @@ class _BrandPageState extends State<BrandPage> {
       name: newName,
     );
 
-    if (mounted) Navigator.pop(context, true);
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> deleteBrand() async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: const Text("删除品牌"),
-            content: Text(
-              "确定删除「${widget.brandName}」吗？\n该品牌下所有产品都会删除。",
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("取消"),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("删除"),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text("删除品牌"),
+        content: Text(
+          "确定删除「${widget.brandName}」吗？\n该品牌下所有产品都会删除。",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("取消"),
           ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("删除"),
+          ),
+        ],
+      ),
     );
 
     if (ok != true) return;
 
     await DatabaseHelper.instance.deleteBrand(widget.brandId);
 
-    if (mounted) Navigator.pop(context, true);
+    if (mounted) {
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> showFilterSheet() async {
-    Set<String> temp = Set.from(selectedFilters);
+    final temp = Set<String>.from(selectedFilters);
 
     await showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
       ),
-      builder: (_) =>
-          StatefulBuilder(
-            builder: (context, setSheet) {
-              Widget item(String label) {
-                final checked = temp.contains(label);
+      builder: (_) => StatefulBuilder(
+        builder: (context, setSheet) {
+          Widget item(String label) {
+            final checked = temp.contains(label);
 
-                return CheckboxListTile(
-                  value: checked,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  title: Text(label),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  onChanged: (_) {
-                    setSheet(() {
-                      checked ? temp.remove(label) : temp.add(label);
-                    });
-                  },
-                );
-              }
+            return CheckboxListTile(
+              value: checked,
+              activeColor: Theme.of(context).colorScheme.primary,
+              title: Text(
+                label,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (_) {
+                setSheet(() {
+                  checked ? temp.remove(label) : temp.add(label);
+                });
+              },
+            );
+          }
 
-              final isDrink = widget.category == "饮品";
+          final isDrink = widget.category == "饮品";
 
-              return SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "热量筛选",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (isDrink) ...[
+                    item("0-150"),
+                    item("150-220"),
+                    item("220-300"),
+                    item("300+"),
+                  ] else ...[
+                    item("0-400"),
+                    item("400-500"),
+                    item("500-600"),
+                    item("600+"),
+                  ],
+                  const SizedBox(height: 20),
+                  Row(
                     children: [
-                      const Text(
-                        "热量筛选",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            temp.clear();
+                            setSheet(() {});
+                          },
+                          child: const Text("清空"),
                         ),
                       ),
-                      const SizedBox(height: 20),
-
-                      if (isDrink) ...[
-                        item("0-150"),
-                        item("150-220"),
-                        item("220-300"),
-                        item("300+"),
-                      ] else ...[
-                        item("0-400"),
-                        item("400-500"),
-                        item("500-600"),
-                        item("600+"),
-                      ],
-
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                temp.clear();
-                                setSheet(() {});
-                              },
-                              child: const Text("清空"),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: () {
-                                selectedFilters = temp;
-                                Navigator.pop(context);
-                                applyFilterAndSort();
-                              },
-                              child: const Text("完成"),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            selectedFilters = Set<String>.from(temp);
+                            Navigator.pop(context);
+                            applyFilterAndSort();
+                          },
+                          child: const Text("完成"),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -490,12 +515,16 @@ class _BrandPageState extends State<BrandPage> {
         Navigator.pop(context, hasChanged);
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
           centerTitle: true,
-          title: Text(widget.brandName),
+          title: Text(
+            widget.brandName,
+            style: TextStyle(color: colorScheme.onSurface),
+          ),
           actions: [
             PopupMenuButton<String>(
+              iconColor: colorScheme.onSurface,
               onSelected: (value) {
                 switch (value) {
                   case "add":
@@ -518,9 +547,8 @@ class _BrandPageState extends State<BrandPage> {
                     break;
                 }
               },
-              itemBuilder: (_) =>
-              [
-                PopupMenuItem(
+              itemBuilder: (_) => [
+                const PopupMenuItem(
                   value: "add",
                   child: Row(
                     children: [
@@ -530,7 +558,7 @@ class _BrandPageState extends State<BrandPage> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: "csv",
                   child: Row(
                     children: [
@@ -540,7 +568,7 @@ class _BrandPageState extends State<BrandPage> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: "rename",
                   child: Row(
                     children: [
@@ -559,14 +587,12 @@ class _BrandPageState extends State<BrandPage> {
                             ? Icons.vertical_align_bottom
                             : Icons.push_pin_outlined,
                       ),
-                      SizedBox(width: 10),
-                      Text(
-                        isTop ? "取消置顶" : "置顶品牌",
-                      ),
+                      const SizedBox(width: 10),
+                      Text(isTop ? "取消置顶" : "置顶品牌"),
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: "remark",
                   child: Row(
                     children: [
@@ -576,11 +602,14 @@ class _BrandPageState extends State<BrandPage> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: "delete",
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline, color: Colors.red),
+                      Icon(
+                        Icons.delete_outline,
+                        color: Colors.red,
+                      ),
                       SizedBox(width: 10),
                       Text(
                         "删除品牌",
@@ -603,20 +632,28 @@ class _BrandPageState extends State<BrandPage> {
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: secondarySurfaceColor,
                         borderRadius: BorderRadius.circular(22),
                       ),
                       child: TextField(
                         textAlignVertical: TextAlignVertical.center,
+                        style: TextStyle(color: primaryTextColor),
+                        cursorColor: colorScheme.primary,
                         onChanged: (value) {
                           searchText = value;
                           applyFilterAndSort();
                         },
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: secondaryTextColor,
+                          ),
+                          hintStyle: TextStyle(color: secondaryTextColor),
                           border: InputBorder.none,
                           isCollapsed: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -626,10 +663,11 @@ class _BrandPageState extends State<BrandPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
+                      tooltip: "按热量排序",
                       onPressed: () {
                         sortAscending = !sortAscending;
                         applyFilterAndSort();
@@ -639,6 +677,7 @@ class _BrandPageState extends State<BrandPage> {
                             ? Icons.arrow_upward_rounded
                             : Icons.arrow_downward_rounded,
                         size: 20,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -647,12 +686,17 @@ class _BrandPageState extends State<BrandPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
+                      color: colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: IconButton(
+                      tooltip: "热量筛选",
                       onPressed: showFilterSheet,
-                      icon: const Icon(Icons.tune_rounded, size: 20),
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        size: 20,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ],
@@ -667,7 +711,7 @@ class _BrandPageState extends State<BrandPage> {
                     "注：$brandRemark",
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                      color: secondaryTextColor,
                       height: 1.5,
                     ),
                   ),
@@ -678,7 +722,9 @@ class _BrandPageState extends State<BrandPage> {
                   ? Center(
                 child: Text(
                   "暂无产品",
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55)),
+                  style: TextStyle(
+                    color: secondaryTextColor,
+                  ),
                 ),
               )
                   : ListView.builder(
@@ -697,8 +743,8 @@ class _BrandPageState extends State<BrandPage> {
                         children: [
                           SlidableAction(
                             onPressed: (_) => editFood(food),
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
                             icon: Icons.edit_outlined,
                             label: "编辑",
                             borderRadius: const BorderRadius.only(
@@ -725,40 +771,39 @@ class _BrandPageState extends State<BrandPage> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xff2C2C2E)
-                              : const Color(0xffFAFAFA),
+                          color: pageCardColor,
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Row(
                           children: [
                             Expanded(
                               child: Text(
-                                food["name"],
-                                style: const TextStyle(
+                                food["name"].toString(),
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
+                                  color: primaryTextColor,
                                 ),
                               ),
                             ),
                             Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
                                   "${food["calories"]}",
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                    calorieColor(food["calories"]),
+                                    color: calorieColor(
+                                      food["calories"] as int,
+                                    ),
                                   ),
                                 ),
                                 Text(
                                   "kcal",
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                                    color: secondaryTextColor,
                                   ),
                                 ),
                               ],
