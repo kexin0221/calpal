@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 
@@ -39,42 +40,49 @@ class _AddBrandPageState extends State<AddBrandPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         title: Text(
           "添加品牌",
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme: IconThemeData(
+          color: colorScheme.onSurface,
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "品牌名称",
               style: TextStyle(
+                color: colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
-
             const SizedBox(height: 10),
-
             TextField(
               controller: nameController,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+              ),
               decoration: InputDecoration(
-                hintText: "",
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
+                fillColor: colorScheme.surfaceContainerHighest,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 18,
                   vertical: 16,
@@ -83,21 +91,31 @@ class _AddBrandPageState extends State<AddBrandPage> {
                   borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide.none,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: colorScheme.outline.withValues(alpha: 0.15),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.5,
+                  ),
+                ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            const Text(
+            Text(
               "当前分类",
               style: TextStyle(
+                color: colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
-
             const SizedBox(height: 10),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(
@@ -105,28 +123,27 @@ class _AddBrandPageState extends State<AddBrandPage> {
                 vertical: 16,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onPrimary,
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(
                 widget.category,
-                style: const TextStyle(
+                style: TextStyle(
+                  color: colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-
             const Spacer(),
-
             SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
                 onPressed: saveBrand,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),

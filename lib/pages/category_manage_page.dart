@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 
@@ -17,7 +18,6 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     loadCategories();
   }
 
-  /// ⭐ 关键修复：把 QueryRow 转成可修改的 Map
   Future<void> loadCategories() async {
     final data = await DatabaseHelper.instance.getCategories();
 
@@ -39,9 +39,10 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: "请输入分类名称",
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
           ),
+          decoration: const InputDecoration(),
         ),
         actions: [
           TextButton(
@@ -52,10 +53,12 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
             onPressed: () =>
                 Navigator.pop(context, controller.text.trim()),
             child: const Text("确定"),
-          )
+          ),
         ],
       ),
     );
+
+    controller.dispose();
 
     if (name == null || name.isEmpty) return;
 
@@ -74,6 +77,10 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
         content: TextField(
           controller: controller,
           autofocus: true,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          decoration: const InputDecoration(),
         ),
         actions: [
           TextButton(
@@ -84,10 +91,12 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
             onPressed: () =>
                 Navigator.pop(context, controller.text.trim()),
             child: const Text("保存"),
-          )
+          ),
         ],
       ),
     );
+
+    controller.dispose();
 
     if (name == null || name.isEmpty) return;
 
@@ -97,6 +106,8 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
 
   // 删除分类
   Future<void> deleteCategory(Map<String, dynamic> item) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -111,11 +122,12 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text("删除"),
-          )
+          ),
         ],
       ),
     );
@@ -126,7 +138,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     await loadCategories();
   }
 
-  // ⭐ 排序
+  // 排序
   Future<void> reorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
 
@@ -140,24 +152,32 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           "分类管理",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
+        iconTheme: IconThemeData(
+          color: colorScheme.onSurface,
+        ),
       ),
       body: Column(
         children: [
           const SizedBox(height: 8),
           Expanded(
             child: ReorderableListView.builder(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: categories.length,
               onReorder: reorder,
               buildDefaultDragHandles: false,
@@ -166,30 +186,29 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
 
                 return Container(
                   key: ValueKey(item["id"]),
-                  margin:
-                  const EdgeInsets.only(bottom: 10),
+                  margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius:
-                    BorderRadius.circular(18),
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: ListTile(
-                    contentPadding:
-                    const EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 6,
                     ),
-                    leading:
-                    ReorderableDragStartListener(
+                    leading: ReorderableDragStartListener(
                       index: index,
                       child: Icon(
                         Icons.drag_handle,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                        color: colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
                       ),
                     ),
                     title: Text(
                       item["name"],
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -198,18 +217,15 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(
-                              Icons.edit_outlined),
-                          onPressed: () =>
-                              editCategory(item),
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => editCategory(item),
                         ),
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.delete_outline,
-                            color: Colors.red,
+                            color: colorScheme.error,
                           ),
-                          onPressed: () =>
-                              deleteCategory(item),
+                          onPressed: () => deleteCategory(item),
                         ),
                       ],
                     ),
@@ -219,8 +235,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
             ),
           ),
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             child: SizedBox(
               width: double.infinity,
               height: 54,
@@ -229,11 +244,10 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                 icon: const Icon(Icons.add),
                 label: const Text("新增分类"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(28),
                   ),
                 ),
               ),

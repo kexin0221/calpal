@@ -1,3 +1,4 @@
+
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -77,10 +78,13 @@ class _SettingsPageState extends State<SettingsPage> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
       ),
       child: ListTile(
@@ -90,28 +94,55 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         leading: CircleAvatar(
           radius: 22,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          child: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          child: Icon(
+            icon,
+            color: colorScheme.onSurface,
+          ),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap,
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: colorScheme.onSurface.withValues(alpha: 0.65),
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: colorScheme.onSurface.withValues(alpha: 0.55),
+        ),
+        onTap: loading ? null : onTap,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        title: const Text("设置"),
+        title: Text(
+          "设置",
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: IconThemeData(
+          color: colorScheme.onSurface,
+        ),
       ),
       body: Stack(
         children: [
@@ -121,37 +152,32 @@ class _SettingsPageState extends State<SettingsPage> {
               Text(
                 "数据同步",
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                  color: colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 10),
-
               item(
                 icon: Icons.ios_share_rounded,
                 title: "导出热量库",
                 subtitle: "生成 calpal_backup.json",
                 onTap: exportDatabase,
               ),
-
               item(
                 icon: Icons.download_rounded,
                 title: "导入热量库",
                 subtitle: "从 JSON 恢复全部数据",
                 onTap: importDatabase,
               ),
-
               const SizedBox(height: 28),
-
               Text(
                 "管理",
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .55),
+                  color: colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 10),
-
               item(
                 icon: Icons.category_outlined,
                 title: "分类管理",
@@ -167,12 +193,15 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ],
           ),
-
           if (loading)
-            Container(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .16),
-              child: const Center(
-                child: CircularProgressIndicator(),
+            Positioned.fill(
+              child: ColoredBox(
+                color: colorScheme.scrim.withValues(alpha: 0.25),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: colorScheme.primary,
+                  ),
+                ),
               ),
             ),
         ],
