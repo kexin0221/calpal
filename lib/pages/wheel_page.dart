@@ -42,6 +42,7 @@ class _WheelPageState extends State<WheelPage>
   double angle = 0;
   bool spinning = false;
   bool isLoading = true;
+  bool hasStartedSpinning = false;
   double pointerOffset = 0;
 
   String resultBrand = "";
@@ -309,6 +310,7 @@ class _WheelPageState extends State<WheelPage>
 
     // 修改分类/品牌/热量筛选后，
     // 默认全部候选产品重新参与转盘
+    hasStartedSpinning = false;
     candidates = List<Map<String, dynamic>>.from(
       allCandidates,
     );
@@ -684,6 +686,7 @@ class _WheelPageState extends State<WheelPage>
       },
     );
 
+    hasStartedSpinning = false;
     if (mounted) {
       setState(() {});
     }
@@ -698,6 +701,7 @@ class _WheelPageState extends State<WheelPage>
 
     setState(() {
       spinning = true;
+      hasStartedSpinning = true;
       resultBrand = "";
       resultFood = "";
       resultCalories = 0;
@@ -1276,90 +1280,94 @@ class _WheelPageState extends State<WheelPage>
 
               // ===== 预设方案 =====
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     "预设方案",
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SizedBox(
+                      height: 42,
+                      child: presets.isEmpty
+                          ? Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "点击 + 保存当前筛选方案",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5),
+                          ),
+                        ),
+                      )
+                          : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: presets.length,
+                        separatorBuilder: (_, _) =>
+                        const SizedBox(width: 6),
+                        itemBuilder: (_, i) {
+                          final preset = presets[i];
 
-                  const Spacer(),
-
+                          return GestureDetector(
+                            onTap: () => applyPreset(preset),
+                            onLongPress: () => presetMenu(preset),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.bookmark,
+                                    size: 14,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    preset["name"],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                   IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onPressed: createPreset,
                     icon: Icon(
                       Icons.add,
                       size: 22,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ],
-              ),
-
-              SizedBox(
-                height: 58,
-                child: presets.isEmpty
-                    ? Center(
-                  child: Text(
-                    "点击 + 保存当前筛选方案",
-                    style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: .55),
-                      fontSize: 12,
-                    ),
-                  ),
-                )
-                    : ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: presets.length,
-                  separatorBuilder: (_, _) =>
-                  const SizedBox(width: 10),
-                  itemBuilder: (_, i) {
-                    final preset = presets[i];
-
-                    return GestureDetector(
-                      onTap: () => applyPreset(preset),
-                      onLongPress: () => presetMenu(preset),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.bookmark,
-                              size: 16,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              preset["name"],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
               ),
 
               // ===== 转盘 =====
@@ -1381,7 +1389,7 @@ class _WheelPageState extends State<WheelPage>
                       ),
 
                       Positioned(
-                        top: 0,
+                        top: 105,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 90),
                           curve: Curves.easeOut,
@@ -1393,8 +1401,9 @@ class _WheelPageState extends State<WheelPage>
                           child: Icon(
                             Icons.arrow_drop_down,
                             size: 42,
-                            color:
-                            Theme.of(context).colorScheme.primary,
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -1434,19 +1443,19 @@ class _WheelPageState extends State<WheelPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    "共 ${candidates.length} 个候选产品",
-                    style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: .55),
-                      fontSize: 12,
+                  if (!hasStartedSpinning) ...[
+                    Text(
+                      "共 ${candidates.length} 个候选产品",
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: .55),
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(width: 8),
-
+                    const SizedBox(width: 8),
+                  ],
                   GestureDetector(
                     onTap: showCandidateProducts,
                     child: Container(
@@ -1464,19 +1473,15 @@ class _WheelPageState extends State<WheelPage>
                           Icon(
                             Icons.list_alt_outlined,
                             size: 14,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            "查看产品",
+                            hasStartedSpinning ? "修改产品" : "查看产品",
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ],
