@@ -1324,9 +1324,7 @@ class _WheelPageState extends State<WheelPage>
                                 horizontal: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Row(
@@ -1389,7 +1387,7 @@ class _WheelPageState extends State<WheelPage>
                       ),
 
                       Positioned(
-                        top: 105,
+                        top: 0,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 90),
                           curve: Curves.easeOut,
@@ -1439,11 +1437,11 @@ class _WheelPageState extends State<WheelPage>
                 ),
               ),
 
-              // ===== 候选产品数量 + 查看按钮 =====
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (!hasStartedSpinning) ...[
+              // ===== 候选产品数量 + 修改按钮 =====
+              if (!hasStartedSpinning)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Text(
                       "共 ${candidates.length} 个候选产品",
                       style: TextStyle(
@@ -1455,41 +1453,40 @@ class _WheelPageState extends State<WheelPage>
                       ),
                     ),
                     const SizedBox(width: 8),
-                  ],
-                  GestureDetector(
-                    onTap: showCandidateProducts,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.list_alt_outlined,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            hasStartedSpinning ? "修改产品" : "查看产品",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                    GestureDetector(
+                      onTap: showCandidateProducts,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.list_alt_outlined,
+                              size: 14,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              "修改产品",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
 
               const SizedBox(height: 10),
 
