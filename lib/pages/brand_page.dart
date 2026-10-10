@@ -702,21 +702,7 @@ class _BrandPageState extends State<BrandPage> {
                 ],
               ),
             ),
-            if (brandRemark.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "注：$brandRemark",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: secondaryTextColor,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ),
+
             Expanded(
               child: displayFoods.isEmpty
                   ? Center(
@@ -729,9 +715,27 @@ class _BrandPageState extends State<BrandPage> {
               )
                   : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: displayFoods.length,
+                itemCount: displayFoods.length + (brandRemark.isNotEmpty ? 1 : 0),
                 itemBuilder: (context, index) {
-                  final food = displayFoods[index];
+                  if (brandRemark.isNotEmpty && index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "注：$brandRemark",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: secondaryTextColor,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final foodIndex = index - (brandRemark.isNotEmpty ? 1 : 0);
+                  final food = displayFoods[foodIndex];
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
