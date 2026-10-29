@@ -34,18 +34,32 @@ class _BrandPageState extends State<BrandPage> {
 
   String brandRemark = "";
 
-  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  bool get isDark =>
+      Theme
+          .of(context)
+          .brightness == Brightness.dark;
 
   Color get pageCardColor =>
       isDark ? const Color(0xFF2C2C2E) : const Color(0xFFFAFAFA);
 
   Color get secondarySurfaceColor =>
-      Theme.of(context).colorScheme.surfaceContainerHighest;
+      Theme
+          .of(context)
+          .colorScheme
+          .surfaceContainerHighest;
 
-  Color get primaryTextColor => Theme.of(context).colorScheme.onSurface;
+  Color get primaryTextColor =>
+      Theme
+          .of(context)
+          .colorScheme
+          .onSurface;
 
   Color get secondaryTextColor =>
-      Theme.of(context).colorScheme.onSurface.withValues(alpha: .55);
+      Theme
+          .of(context)
+          .colorScheme
+          .onSurface
+          .withValues(alpha: .55);
 
   @override
   void initState() {
@@ -171,10 +185,11 @@ class _BrandPageState extends State<BrandPage> {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => AddFoodPage(
-          brandId: widget.brandId,
-          category: widget.category,
-        ),
+        builder: (_) =>
+            AddFoodPage(
+              brandId: widget.brandId,
+              category: widget.category,
+            ),
       ),
     );
 
@@ -196,33 +211,34 @@ class _BrandPageState extends State<BrandPage> {
 
     final result = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("品牌备注"),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          maxLength: 200,
-          decoration: const InputDecoration(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          if (brandRemark.isNotEmpty)
-            TextButton(
-              onPressed: () => Navigator.pop(context, ""),
-              child: const Text(
-                "删除",
-                style: TextStyle(color: Colors.red),
-              ),
+      builder: (_) =>
+          AlertDialog(
+            title: const Text("品牌备注"),
+            content: TextField(
+              controller: controller,
+              maxLines: 5,
+              maxLength: 200,
+              decoration: const InputDecoration(),
             ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text("保存"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("取消"),
+              ),
+              if (brandRemark.isNotEmpty)
+                TextButton(
+                  onPressed: () => Navigator.pop(context, ""),
+                  child: const Text(
+                    "删除",
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: const Text("保存"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (result == null) return;
@@ -243,38 +259,39 @@ class _BrandPageState extends State<BrandPage> {
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("编辑产品"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "产品名称",
-              ),
+      builder: (_) =>
+          AlertDialog(
+            title: const Text("编辑产品"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: "产品名称",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: calorieController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "热量(kcal)",
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: calorieController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "热量(kcal)",
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("取消"),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("取消"),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("保存"),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("保存"),
-          ),
-        ],
-      ),
     );
 
     if (ok != true) return;
@@ -296,24 +313,25 @@ class _BrandPageState extends State<BrandPage> {
   Future<void> deleteFood(Map<String, dynamic> food) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("删除产品"),
-        content: Text("确定删除「${food["name"]}」吗？"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("取消"),
+      builder: (_) =>
+          AlertDialog(
+            title: const Text("删除产品"),
+            content: Text("确定删除「${food["name"]}」吗？"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("取消"),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("删除"),
+              ),
+            ],
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("删除"),
-          ),
-        ],
-      ),
     );
 
     if (ok != true) return;
@@ -322,9 +340,40 @@ class _BrandPageState extends State<BrandPage> {
     await loadFoods();
   }
 
-  Future<void> importCsv() async {
-    final list = await CsvService.pickCsv();
-    if (list == null || list.isEmpty) return;
+
+  Future<void> batchAddFoods() async {
+    final text = await showDialog<String>(
+      context: context,
+      builder: (_) => const _BatchAddDialog(),
+    );
+
+    if (!mounted || text == null || text
+        .trim()
+        .isEmpty) return;
+
+    final list = CsvService.parseText(text);
+
+    if (list.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("没有识别到有效数据，请检查产品名称和热量格式"),
+        ),
+      );
+      return;
+    }
+
+    final existingFoods =
+    await DatabaseHelper.instance.getFoods(widget.brandId);
+
+    final existingNames = existingFoods
+        .map((food) => food["name"].toString().trim().toLowerCase())
+        .toSet();
+
+    final overwriteCount = list.where((food) {
+      return existingNames.contains(
+        food["name"].toString().trim().toLowerCase(),
+      );
+    }).length;
 
     await DatabaseHelper.instance.addFoodsBatch(
       brandId: widget.brandId,
@@ -332,6 +381,17 @@ class _BrandPageState extends State<BrandPage> {
     );
 
     await loadFoods();
+
+    if (!mounted) return;
+
+    final message = overwriteCount > 0
+        ? "批量添加完成，共处理 ${list
+        .length} 项产品；共 $overwriteCount 项同名产品，数值已覆盖"
+        : "批量添加完成，共处理 ${list.length} 项产品";
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> renameBrand() async {
@@ -530,8 +590,8 @@ class _BrandPageState extends State<BrandPage> {
                   case "add":
                     addFood();
                     break;
-                  case "csv":
-                    importCsv();
+                  case "batch":
+                    batchAddFoods();
                     break;
                   case "rename":
                     renameBrand();
@@ -559,12 +619,12 @@ class _BrandPageState extends State<BrandPage> {
                   ),
                 ),
                 const PopupMenuItem(
-                  value: "csv",
+                  value: "batch",
                   child: Row(
                     children: [
-                      Icon(Icons.upload_file),
+                      Icon(Icons.playlist_add),
                       SizedBox(width: 10),
-                      Text("导入 CSV"),
+                      Text("批量添加"),
                     ],
                   ),
                 ),
@@ -704,7 +764,7 @@ class _BrandPageState extends State<BrandPage> {
             ),
 
             Expanded(
-              child: displayFoods.isEmpty
+              child: displayFoods.isEmpty && brandRemark.isEmpty
                   ? Center(
                 child: Text(
                   "暂无产品",
@@ -823,6 +883,64 @@ class _BrandPageState extends State<BrandPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BatchAddDialog extends StatefulWidget {
+  const _BatchAddDialog();
+
+  @override
+  State<_BatchAddDialog> createState() => _BatchAddDialogState();
+}
+
+class _BatchAddDialogState extends State<_BatchAddDialog> {
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("批量添加产品"),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: TextField(
+          controller: controller,
+          autofocus: true,
+          minLines: 6,
+          maxLines: 10,
+          keyboardType: TextInputType.multiline,
+          textAlignVertical: TextAlignVertical.top,
+          decoration: const InputDecoration(
+            hintText: "每行输入一个产品，格式：名称，热量",
+            border: OutlineInputBorder(),
+            alignLabelWithHint: true,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("取消"),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.pop(context, controller.text);
+          },
+          child: const Text("批量添加"),
+        ),
+      ],
     );
   }
 }

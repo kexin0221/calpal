@@ -406,11 +406,40 @@ class DatabaseHelper {
     required int calories,
   }) async {
     final db = await database;
+    final foodName = name.trim();
 
-    return db.insert("foods", {
-      "brandId": brandId,
-      "name": name,
-      "calories": calories,
+    return db.transaction((txn) async {
+      final existing = await txn.query(
+        "foods",
+        where: "brandId = ? AND name = ? COLLATE NOCASE",
+        whereArgs: [brandId, foodName],
+        orderBy: "id ASC",
+      );
+
+      if (existing.isNotEmpty) {
+        final id = existing.first["id"] as int;
+
+        await txn.update(
+          "foods",
+          {"name": foodName, "calories": calories},
+          where: "id = ?",
+          whereArgs: [id],
+        );
+
+        await txn.delete(
+          "foods",
+          where: "brandId = ? AND name = ? COLLATE NOCASE AND id != ?",
+          whereArgs: [brandId, foodName, id],
+        );
+
+        return id;
+      }
+
+      return txn.insert("foods", {
+        "brandId": brandId,
+        "name": foodName,
+        "calories": calories,
+      });
     });
   }
 
@@ -450,17 +479,49 @@ class DatabaseHelper {
     required List<Map<String, dynamic>> foods,
   }) async {
     final db = await database;
-    final batch = db.batch();
 
-    for (final food in foods) {
-      batch.insert("foods", {
-        "brandId": brandId,
-        "name": food["name"],
-        "calories": food["calories"],
-      });
-    }
+    await db.transaction((txn) async {
+      for (final food in foods) {
+        final name = (food["name"] ?? "").toString().trim();
+        final calories = food["calories"] is int
+            ? food["calories"] as int
+            : int.tryParse(food["calories"].toString());
 
-    await batch.commit(noResult: true);
+        if (name.isEmpty || calories == null || calories <= 0) {
+          continue;
+        }
+
+        final existing = await txn.query(
+          "foods",
+          where: "brandId = ? AND name = ? COLLATE NOCASE",
+          whereArgs: [brandId, name],
+          orderBy: "id ASC",
+        );
+
+        if (existing.isEmpty) {
+          await txn.insert("foods", {
+            "brandId": brandId,
+            "name": name,
+            "calories": calories,
+          });
+        } else {
+          final id = existing.first["id"] as int;
+
+          await txn.update(
+            "foods",
+            {"name": name, "calories": calories},
+            where: "id = ?",
+            whereArgs: [id],
+          );
+
+          await txn.delete(
+            "foods",
+            where: "brandId = ? AND name = ? COLLATE NOCASE AND id != ?",
+            whereArgs: [brandId, name, id],
+          );
+        }
+      }
+    });
   }
 
   //================ 预设方案 =================//
