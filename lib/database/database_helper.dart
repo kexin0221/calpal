@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
       onOpen: (db) async {
@@ -57,6 +57,18 @@ class DatabaseHelper {
       brandId INTEGER NOT NULL,
       name TEXT NOT NULL,
       calories INTEGER NOT NULL
+    )
+  """);
+
+    // 产品分量
+    await db.execute("""
+    CREATE TABLE food_portions(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      foodId INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      calories INTEGER NOT NULL,
+      isDefault INTEGER DEFAULT 0,
+      sortOrder INTEGER DEFAULT 0
     )
   """);
 
@@ -152,6 +164,19 @@ class DatabaseHelper {
         )
   """);
     }
+
+    if (oldVersion < 7) {
+      await db.execute("""
+        CREATE TABLE IF NOT EXISTS food_portions(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          foodId INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          calories INTEGER NOT NULL,
+          isDefault INTEGER DEFAULT 0,
+          sortOrder INTEGER DEFAULT 0
+        )
+      """);
+    }
   }
 
   Future<void> _createMissingTables(Database db) async {
@@ -181,6 +206,17 @@ class DatabaseHelper {
       calories INTEGER NOT NULL
     )
   """);
+
+    await db.execute("""
+      CREATE TABLE IF NOT EXISTS food_portions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        foodId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        calories INTEGER NOT NULL,
+        isDefault INTEGER DEFAULT 0,
+        sortOrder INTEGER DEFAULT 0
+      )
+    """);
 
     await db.execute("""
     CREATE TABLE IF NOT EXISTS presets(
@@ -270,7 +306,17 @@ class DatabaseHelper {
     final batch = db.batch();
 
     for (final brand in brands) {
-      batch.delete("foods", where: "brandId=?", whereArgs: [brand["id"]]);
+      batch.delete(
+        "food_portions",
+        where: "foodId IN (SELECT id FROM foods WHERE brandId=?)",
+        whereArgs: [brand["id"]],
+      );
+
+      batch.delete(
+        "foods",
+        where: "brandId=?",
+        whereArgs: [brand["id"]],
+      );
     }
 
     batch.delete("brands", where: "category=?", whereArgs: [categoryName]);
@@ -377,9 +423,25 @@ class DatabaseHelper {
   Future<int> deleteBrand(int id) async {
     final db = await database;
 
-    await db.delete("foods", where: "brandId=?", whereArgs: [id]);
+    return db.transaction((txn) async {
+      await txn.delete(
+        "food_portions",
+        where: "foodId IN (SELECT id FROM foods WHERE brandId=?)",
+        whereArgs: [id],
+      );
 
-    return db.delete("brands", where: "id=?", whereArgs: [id]);
+      await txn.delete(
+        "foods",
+        where: "brandId=?",
+        whereArgs: [id],
+      );
+
+      return txn.delete(
+        "brands",
+        where: "id=?",
+        whereArgs: [id],
+      );
+    });
   }
 
   Future<void> insertBrandRaw(Map<String, dynamic> data) async {
@@ -400,6 +462,135 @@ class DatabaseHelper {
     );
   }
 
+  //================ 产品分量 =================//
+
+  Future<List<Map<String, dynamic>>> getFoodPortions(int foodId) async {
+    final db = await database;
+
+    return db.query(
+      "food_portions",
+      where: "foodId=?",
+      whereArgs: [foodId],
+      orderBy: "sortOrder ASC, id ASC",
+    );
+  }
+
+  Future<int> saveFoodWithPortions({
+    required int brandId,
+    int? foodId,
+    required String name,
+    required List<Map<String, dynamic>> portions,
+  }) async {
+    final db = await database;
+    final foodName = name.trim();
+
+    if (foodName.isEmpty || portions.isEmpty) {
+      throw Exception("产品名称和分量不能为空");
+    }
+
+    final validPortions = <Map<String, dynamic>>[];
+
+    for (final portion in portions) {
+      final portionName = (portion["name"] ?? "").toString().trim();
+      final calories = int.tryParse(
+        portion["calories"].toString(),
+      );
+
+      if (portionName.isEmpty || calories == null || calories <= 0) {
+        throw Exception("请检查分量名称和热量");
+      }
+
+      validPortions.add({
+        "name": portionName,
+        "calories": calories,
+      });
+    }
+
+    return db.transaction((txn) async {
+      final defaultIndex = 0;
+      final defaultCalories =
+      validPortions[defaultIndex]["calories"] as int;
+
+      int id;
+
+      if (foodId != null) {
+        await txn.update(
+          "foods",
+          {
+            "name": foodName,
+            "calories": defaultCalories,
+          },
+          where: "id=? AND brandId=?",
+          whereArgs: [foodId, brandId],
+        );
+        id = foodId;
+      } else {
+        final existing = await txn.query(
+          "foods",
+          where: "brandId=? AND name=? COLLATE NOCASE",
+          whereArgs: [brandId, foodName],
+          orderBy: "id ASC",
+        );
+
+        if (existing.isEmpty) {
+          id = await txn.insert("foods", {
+            "brandId": brandId,
+            "name": foodName,
+            "calories": defaultCalories,
+          });
+        } else {
+          id = existing.first["id"] as int;
+
+          await txn.update(
+            "foods",
+            {
+              "name": foodName,
+              "calories": defaultCalories,
+            },
+            where: "id=?",
+            whereArgs: [id],
+          );
+
+          for (final duplicate in existing.skip(1)) {
+            final duplicateId = duplicate["id"] as int;
+
+            await txn.delete(
+              "food_portions",
+              where: "foodId=?",
+              whereArgs: [duplicateId],
+            );
+
+            await txn.delete(
+              "foods",
+              where: "id=?",
+              whereArgs: [duplicateId],
+            );
+          }
+        }
+      }
+
+      await txn.delete(
+        "food_portions",
+        where: "foodId=?",
+        whereArgs: [id],
+      );
+
+      for (int i = 0; i < validPortions.length; i++) {
+        final portion = validPortions[i];
+
+        await txn.insert("food_portions", {
+          "foodId": id,
+          "name": portion["name"],
+          "calories": portion["calories"],
+          "isDefault": i == defaultIndex ? 1 : 0,
+          "sortOrder": i,
+        });
+      }
+
+      return id;
+    });
+  }
+
   Future<int> addFood({
     required int brandId,
     required String name,
@@ -418,6 +609,12 @@ class DatabaseHelper {
 
       if (existing.isNotEmpty) {
         final id = existing.first["id"] as int;
+
+        await txn.delete(
+          "food_portions",
+          where: "foodId=?",
+          whereArgs: [id],
+        );
 
         await txn.update(
           "foods",
@@ -450,18 +647,41 @@ class DatabaseHelper {
   }) async {
     final db = await database;
 
-    return db.update(
-      "foods",
-      {"name": name, "calories": calories},
-      where: "id=?",
-      whereArgs: [id],
-    );
+    return db.transaction((txn) async {
+      await txn.delete(
+        "food_portions",
+        where: "foodId=?",
+        whereArgs: [id],
+      );
+
+      return txn.update(
+        "foods",
+        {
+          "name": name,
+          "calories": calories,
+        },
+        where: "id=?",
+        whereArgs: [id],
+      );
+    });
   }
 
   Future<int> deleteFood(int id) async {
     final db = await database;
 
-    return db.delete("foods", where: "id=?", whereArgs: [id]);
+    return db.transaction((txn) async {
+      await txn.delete(
+        "food_portions",
+        where: "foodId=?",
+        whereArgs: [id],
+      );
+
+      return txn.delete(
+        "foods",
+        where: "id=?",
+        whereArgs: [id],
+      );
+    });
   }
 
   Future<List<Map<String, dynamic>>> getAllFoods() async {
@@ -607,6 +827,7 @@ class DatabaseHelper {
   Future<void> clearAllData() async {
     final db = await database;
 
+    await db.delete("food_portions");
     await db.delete("foods");
     await db.delete("brands");
     await db.delete("categories");
