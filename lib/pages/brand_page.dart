@@ -67,8 +67,25 @@ class _BrandPageState extends State<BrandPage> {
     loadFoods();
   }
 
+
   Future<void> loadFoods() async {
-    foods = await DatabaseHelper.instance.getFoods(widget.brandId);
+    final loadedFoods =
+    await DatabaseHelper.instance.getFoods(widget.brandId);
+
+    final foodsWithPortions = <Map<String, dynamic>>[];
+
+    for (final row in loadedFoods) {
+      final food = Map<String, dynamic>.from(row);
+
+      final portions = await DatabaseHelper.instance.getFoodPortions(
+        food["id"] as int,
+      );
+
+      food["portions"] = portions;
+      foodsWithPortions.add(food);
+    }
+
+    foods = foodsWithPortions;
     brandRemark = await DatabaseHelper.instance.getBrandRemark(widget.brandId);
     final brands = await DatabaseHelper.instance.getAllBrands();
 
@@ -79,6 +96,7 @@ class _BrandPageState extends State<BrandPage> {
     isTop = (current["isTop"] ?? 0) == 1;
     applyFilterAndSort();
   }
+
 
   Color calorieColor(int calories) {
     if (widget.category == "饮品") {
@@ -253,61 +271,309 @@ class _BrandPageState extends State<BrandPage> {
 
   Future<void> editFood(Map<String, dynamic> food) async {
     final nameController = TextEditingController(text: food["name"]);
-    final calorieController = TextEditingController(
-      text: food["calories"].toString(),
+    final originalPortions = List<Map<String, dynamic>>.from(
+      food["portions"] as List<Map<String, dynamic>>,
     );
 
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: const Text("编辑产品"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: "产品名称",
-                  ),
+    final isMultiPortion = originalPortions.length > 1;
+
+    if (!isMultiPortion) {
+      final calorieController = TextEditingController(
+        text: food["calories"].toString(),
+      );
+
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text("编辑产品"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: "产品名称",
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: calorieController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "热量(kcal)",
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("取消"),
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("保存"),
+              const SizedBox(height: 12),
+              TextField(
+                controller: calorieController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "热量(kcal)",
+                ),
               ),
             ],
           ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () {
+                FocusScope.of(dialogContext).unfocus();
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text("取消"),
+            ),
+            FilledButton(
+              onPressed: () {
+                FocusScope.of(dialogContext).unfocus();
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text("保存"),
+            ),
+          ],
+        ),
+      );
 
-    if (ok != true) return;
+      final name = nameController.text.trim();
+      final calories = int.tryParse(calorieController.text);
 
-    final name = nameController.text.trim();
-    final calories = int.tryParse(calorieController.text);
+      nameController.dispose();
+      calorieController.dispose();
 
-    if (name.isEmpty || calories == null || calories <= 0) return;
+      if (ok != true) return;
 
-    await DatabaseHelper.instance.updateFood(
-      id: food["id"],
-      name: name,
-      calories: calories,
-    );
+      if (name.isEmpty || calories == null || calories <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("请检查产品名称和热量")),
+        );
+        return;
+      }
+
+      await DatabaseHelper.instance.updateFood(
+        id: food["id"],
+        name: name,
+        calories: calories,
+      );
+    } else {
+      final portionNameControllers = originalPortions
+          .map(
+            (portion) => TextEditingController(
+          text: portion["name"].toString(),
+        ),
+      )
+          .toList();
+
+      final portionCalorieControllers = originalPortions
+          .map(
+            (portion) => TextEditingController(
+          text: portion["calories"].toString(),
+        ),
+      )
+          .toList();
+
+      final removedNameControllers = <TextEditingController>[];
+      final removedCalorieControllers = <TextEditingController>[];
+
+      String? errorText;
+
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("编辑多规格产品"),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: "产品名称",
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      for (int i = 0;
+                      i < portionNameControllers.length;
+                      i++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: TextField(
+                                  controller: portionNameControllers[i],
+                                  decoration: InputDecoration(
+                                    labelText: "规格 ${i + 1}",
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 2,
+                                child: TextField(
+                                  controller: portionCalorieControllers[i],
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: "热量(kcal)",
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: portionNameControllers.length <= 1
+                                    ? null
+                                    : () {
+                                  setDialogState(() {
+                                    removedNameControllers.add(
+                                      portionNameControllers.removeAt(i),
+                                    );
+                                    removedCalorieControllers.add(
+                                      portionCalorieControllers.removeAt(i),
+                                    );
+                                    errorText = null;
+                                  });
+                                },
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            setDialogState(() {
+                              portionNameControllers.add(
+                                TextEditingController(),
+                              );
+                              portionCalorieControllers.add(
+                                TextEditingController(),
+                              );
+                              errorText = null;
+                            });
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text("添加规格"),
+                        ),
+                      ),
+                      if (errorText != null)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            errorText!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    FocusScope.of(dialogContext).unfocus();
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text("取消"),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+
+                    if (name.isEmpty) {
+                      setDialogState(() {
+                        errorText = "请输入产品名称";
+                      });
+                      return;
+                    }
+
+                    final portions = <Map<String, dynamic>>[];
+
+                    for (int i = 0;
+                    i < portionNameControllers.length;
+                    i++) {
+                      final portionName =
+                      portionNameControllers[i].text.trim();
+                      final calories = int.tryParse(
+                        portionCalorieControllers[i].text.trim(),
+                      );
+
+                      if (portionName.isEmpty ||
+                          calories == null ||
+                          calories <= 0) {
+                        setDialogState(() {
+                          errorText = "请检查所有规格名称和热量";
+                        });
+                        return;
+                      }
+
+                      portions.add({
+                        "name": portionName,
+                        "calories": calories,
+                      });
+                    }
+
+                    FocusScope.of(dialogContext).unfocus();
+                    Navigator.pop(dialogContext, {
+                      "name": name,
+                      "portions": portions,
+                    });
+                  },
+                  child: const Text("保存"),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      nameController.dispose();
+
+      for (final controller in portionNameControllers) {
+        controller.dispose();
+      }
+
+      for (final controller in portionCalorieControllers) {
+        controller.dispose();
+      }
+
+      for (final controller in removedNameControllers) {
+        controller.dispose();
+      }
+
+      for (final controller in removedCalorieControllers) {
+        controller.dispose();
+      }
+
+      if (result == null) return;
+
+      final name = result["name"] as String;
+      final portions =
+      result["portions"] as List<Map<String, dynamic>>;
+
+      if (portions.length == 1) {
+        await DatabaseHelper.instance.updateFood(
+          id: food["id"],
+          name: name,
+          calories: portions.first["calories"] as int,
+        );
+      } else {
+        await DatabaseHelper.instance.saveFoodWithPortions(
+          brandId: widget.brandId,
+          foodId: food["id"] as int,
+          name: name,
+          portions: portions,
+        );
+      }
+    }
 
     await loadFoods();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("产品修改成功")),
+      );
+    }
   }
 
   Future<void> deleteFood(Map<String, dynamic> food) async {
@@ -349,7 +615,9 @@ class _BrandPageState extends State<BrandPage> {
 
     if (!mounted || text == null || text
         .trim()
-        .isEmpty) return;
+        .isEmpty) {
+      return;
+    }
 
     final list = CsvService.parseText(text);
 
@@ -797,6 +1065,16 @@ class _BrandPageState extends State<BrandPage> {
                   final foodIndex = index - (brandRemark.isNotEmpty ? 1 : 0);
                   final food = displayFoods[foodIndex];
 
+                  final portions = List<Map<String, dynamic>>.from(
+                    food["portions"] as List<Map<String, dynamic>>,
+                  );
+
+                  portions.sort((a, b) {
+                    return (a["calories"] as int).compareTo(
+                      b["calories"] as int,
+                    );
+                  });
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Slidable(
@@ -850,28 +1128,96 @@ class _BrandPageState extends State<BrandPage> {
                                 ),
                               ),
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  "${food["calories"]}",
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: calorieColor(
-                                      food["calories"] as int,
+                            if (portions.length > 1)
+                              Expanded(
+                                flex: 2,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      reverse: false,
+                                      scrollDirection: Axis.horizontal,
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minWidth: constraints.maxWidth,
+                                        ),
+                                        child: IntrinsicWidth(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.max,
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              for (final portion in portions)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(left: 12),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Transform.translate(
+                                                            offset: const Offset(0, 3),
+                                                            child: Text(
+                                                              portion["name"].toString(),
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: secondaryTextColor,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            "${portion["calories"]}",
+                                                            style: TextStyle(
+                                                              fontSize: 24,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: calorieColor(
+                                                                portion["calories"] as int,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      Text(
+                                                        "kcal",
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: secondaryTextColor,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              )
+                            else
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    "${food["calories"]}",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: calorieColor(
+                                        food["calories"] as int,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  "kcal",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: secondaryTextColor,
+                                  Text(
+                                    "kcal",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: secondaryTextColor,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -923,7 +1269,7 @@ class _BatchAddDialogState extends State<_BatchAddDialog> {
           keyboardType: TextInputType.multiline,
           textAlignVertical: TextAlignVertical.top,
           decoration: const InputDecoration(
-            hintText: "每行输入一个产品，格式：名称，热量",
+            hintText: "每行输入一个产品：\n单规格：名称，热量\n多规格：名称，规格1热量1，规格2热量2",
             border: OutlineInputBorder(),
             alignLabelWithHint: true,
           ),

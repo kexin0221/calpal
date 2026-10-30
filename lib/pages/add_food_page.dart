@@ -20,9 +20,51 @@ class _AddFoodPageState extends State<AddFoodPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController calorieController = TextEditingController();
 
+  bool hasMultiplePortions = false;
+
+  final List<TextEditingController> portionNameControllers = [];
+  final List<TextEditingController> portionCalorieControllers = [];
+
+  void addPortion() {
+    setState(() {
+      portionNameControllers.add(TextEditingController());
+      portionCalorieControllers.add(TextEditingController());
+    });
+  }
+
+  void removePortion(int index) {
+    setState(() {
+      portionNameControllers.removeAt(index).dispose();
+      portionCalorieControllers.removeAt(index).dispose();
+    });
+  }
+
+  void toggleMultiplePortions(bool value) {
+    setState(() {
+      hasMultiplePortions = value;
+
+      if (value && portionNameControllers.isEmpty) {
+        for (int i = 0; i < 2; i++) {
+          portionNameControllers.add(TextEditingController());
+          portionCalorieControllers.add(TextEditingController());
+        }
+      }
+
+      if (!value) {
+        for (final controller in portionNameControllers) {
+          controller.dispose();
+        }
+        for (final controller in portionCalorieControllers) {
+          controller.dispose();
+        }
+        portionNameControllers.clear();
+        portionCalorieControllers.clear();
+      }
+    });
+  }
+
   Future<void> saveFood() async {
     final name = nameController.text.trim();
-    final calories = int.tryParse(calorieController.text);
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,18 +73,49 @@ class _AddFoodPageState extends State<AddFoodPage> {
       return;
     }
 
-    if (calories == null || calories <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("请输入正确的热量")),
-      );
-      return;
-    }
+    if (!hasMultiplePortions) {
+      final calories = int.tryParse(calorieController.text);
 
-    await DatabaseHelper.instance.addFood(
-      brandId: widget.brandId,
-      name: name,
-      calories: calories,
-    );
+      if (calories == null || calories <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("请输入正确的热量")),
+        );
+        return;
+      }
+
+      await DatabaseHelper.instance.addFood(
+        brandId: widget.brandId,
+        name: name,
+        calories: calories,
+      );
+    } else {
+      final portions = <Map<String, dynamic>>[];
+
+      for (int i = 0; i < portionNameControllers.length; i++) {
+        final portionName = portionNameControllers[i].text.trim();
+        final calories = int.tryParse(
+          portionCalorieControllers[i].text.trim(),
+        );
+
+        if (portionName.isEmpty || calories == null || calories <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("请检查第 ${i + 1} 个规格的名称和热量")),
+          );
+          return;
+        }
+
+        portions.add({
+          "name": portionName,
+          "calories": calories,
+        });
+      }
+
+      await DatabaseHelper.instance.saveFoodWithPortions(
+        brandId: widget.brandId,
+        name: name,
+        portions: portions,
+      );
+    }
 
     if (mounted) {
       Navigator.pop(context, true);
@@ -53,6 +126,15 @@ class _AddFoodPageState extends State<AddFoodPage> {
   void dispose() {
     nameController.dispose();
     calorieController.dispose();
+
+    for (final controller in portionNameControllers) {
+      controller.dispose();
+    }
+
+    for (final controller in portionCalorieControllers) {
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
@@ -84,37 +166,131 @@ class _AddFoodPageState extends State<AddFoodPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "产品名称",
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "产品名称",
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: nameController,
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        "有多种规格",
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      value: hasMultiplePortions,
+                      onChanged: toggleMultiplePortions,
+                    ),
+                    const SizedBox(height: 8),
+                    if (!hasMultiplePortions) ...[
+                      Text(
+                        "热量（kcal）",
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: calorieController,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                        ),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ] else ...[
+                      for (int i = 0;
+                      i < portionNameControllers.length;
+                      i++) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "规格 ${i + 1}",
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (portionNameControllers.length > 2)
+                              IconButton(
+                                onPressed: () => removePortion(i),
+                                icon: const Icon(Icons.remove_circle_outline),
+                                color: colorScheme.error,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: portionNameControllers[i],
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: "名称",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: portionCalorieControllers[i],
+                                keyboardType: TextInputType.number,
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: "热量",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: addPortion,
+                          icon: const Icon(Icons.add),
+                          label: const Text("添加规格"),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: nameController,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "热量（kcal）",
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: calorieController,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const Spacer(),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               height: 54,

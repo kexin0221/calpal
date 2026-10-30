@@ -623,11 +623,28 @@ class DatabaseHelper {
           whereArgs: [id],
         );
 
-        await txn.delete(
+        final duplicates = await txn.query(
           "foods",
+          columns: ["id"],
           where: "brandId = ? AND name = ? COLLATE NOCASE AND id != ?",
           whereArgs: [brandId, foodName, id],
         );
+
+        for (final duplicate in duplicates) {
+          final duplicateId = duplicate["id"] as int;
+
+          await txn.delete(
+            "food_portions",
+            where: "foodId=?",
+            whereArgs: [duplicateId],
+          );
+
+          await txn.delete(
+            "foods",
+            where: "id=?",
+            whereArgs: [duplicateId],
+          );
+        }
 
         return id;
       }
@@ -703,13 +720,59 @@ class DatabaseHelper {
     await db.transaction((txn) async {
       for (final food in foods) {
         final name = (food["name"] ?? "").toString().trim();
-        final calories = food["calories"] is int
-            ? food["calories"] as int
-            : int.tryParse(food["calories"].toString());
+        final calories = int.tryParse(
+          (food["calories"] ?? "").toString(),
+        );
 
         if (name.isEmpty || calories == null || calories <= 0) {
           continue;
         }
+
+        final portions = <Map<String, dynamic>>[];
+        final hasPortions = food.containsKey("portions");
+
+        if (hasPortions) {
+          final rawPortions = food["portions"];
+
+          if (rawPortions is! List || rawPortions.length < 2) {
+            continue;
+          }
+
+          var valid = true;
+
+          for (final item in rawPortions) {
+            if (item is! Map) {
+              valid = false;
+              break;
+            }
+
+            final portionName =
+            (item["name"] ?? "").toString().trim();
+            final portionCalories = int.tryParse(
+              (item["calories"] ?? "").toString(),
+            );
+
+            if (portionName.isEmpty ||
+                portionCalories == null ||
+                portionCalories <= 0) {
+              valid = false;
+              break;
+            }
+
+            portions.add({
+              "name": portionName,
+              "calories": portionCalories,
+            });
+          }
+
+          if (!valid || portions.length < 2) {
+            continue;
+          }
+        }
+
+        final defaultCalories = hasPortions
+            ? portions.first["calories"] as int
+            : calories;
 
         final existing = await txn.query(
           "foods",
@@ -718,27 +781,58 @@ class DatabaseHelper {
           orderBy: "id ASC",
         );
 
+        int foodId;
+
         if (existing.isEmpty) {
-          await txn.insert("foods", {
+          foodId = await txn.insert("foods", {
             "brandId": brandId,
             "name": name,
-            "calories": calories,
+            "calories": defaultCalories,
           });
         } else {
-          final id = existing.first["id"] as int;
+          foodId = existing.first["id"] as int;
 
           await txn.update(
             "foods",
-            {"name": name, "calories": calories},
+            {
+              "name": name,
+              "calories": defaultCalories,
+            },
             where: "id = ?",
-            whereArgs: [id],
+            whereArgs: [foodId],
           );
 
-          await txn.delete(
-            "foods",
-            where: "brandId = ? AND name = ? COLLATE NOCASE AND id != ?",
-            whereArgs: [brandId, name, id],
-          );
+          for (final duplicate in existing.skip(1)) {
+            final duplicateId = duplicate["id"] as int;
+
+            await txn.delete(
+              "food_portions",
+              where: "foodId = ?",
+              whereArgs: [duplicateId],
+            );
+
+            await txn.delete(
+              "foods",
+              where: "id = ?",
+              whereArgs: [duplicateId],
+            );
+          }
+        }
+
+        await txn.delete(
+          "food_portions",
+          where: "foodId = ?",
+          whereArgs: [foodId],
+        );
+
+        for (int i = 0; i < portions.length; i++) {
+          await txn.insert("food_portions", {
+            "foodId": foodId,
+            "name": portions[i]["name"],
+            "calories": portions[i]["calories"],
+            "isDefault": i == 0 ? 1 : 0,
+            "sortOrder": i,
+          });
         }
       }
     });
