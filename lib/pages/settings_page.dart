@@ -17,10 +17,10 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool loading = false;
+  bool _loading = false;
 
-  Future<void> exportDatabase() async {
-    setState(() => loading = true);
+  Future<void> _exportDatabase() async {
+    setState(() => _loading = true);
 
     try {
       final file = await ExportService.exportDatabase();
@@ -39,10 +39,10 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
 
-    if (mounted) setState(() => loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> importDatabase() async {
+  Future<void> _importDatabase() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ["json"],
@@ -50,7 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (result == null) return;
 
-    setState(() => loading = true);
+    setState(() => _loading = true);
 
     try {
       final file = File(result.files.single.path!);
@@ -69,10 +69,10 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
 
-    if (mounted) setState(() => loading = false);
+    if (mounted) setState(() => _loading = false);
   }
 
-  Widget item({
+  Widget _item({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -117,7 +117,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Icons.chevron_right_rounded,
           color: colorScheme.onSurface.withValues(alpha: 0.55),
         ),
-        onTap: loading ? null : onTap,
+        onTap: _loading ? null : onTap,
       ),
     );
   }
@@ -157,17 +157,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               const SizedBox(height: 10),
-              item(
+              _item(
                 icon: Icons.ios_share_rounded,
                 title: "导出热量库",
                 subtitle: "生成 calpal_backup.json",
-                onTap: exportDatabase,
+                onTap: _exportDatabase,
               ),
-              item(
+              _item(
                 icon: Icons.download_rounded,
                 title: "导入热量库",
                 subtitle: "从 JSON 恢复全部数据",
-                onTap: importDatabase,
+                onTap: _importDatabase,
               ),
               const SizedBox(height: 28),
               Text(
@@ -178,7 +178,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               const SizedBox(height: 10),
-              item(
+              _item(
                 icon: Icons.category_outlined,
                 title: "分类管理",
                 subtitle: "新增、编辑、删除和排序分类",
@@ -193,7 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ],
           ),
-          if (loading)
+          if (_loading)
             Positioned.fill(
               child: ColoredBox(
                 color: colorScheme.scrim.withValues(alpha: 0.25),

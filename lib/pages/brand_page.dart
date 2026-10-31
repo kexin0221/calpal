@@ -34,32 +34,19 @@ class _BrandPageState extends State<BrandPage> {
 
   String brandRemark = "";
 
-  bool get isDark =>
-      Theme
-          .of(context)
-          .brightness == Brightness.dark;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   Color get pageCardColor =>
       isDark ? const Color(0xFF2C2C2E) : const Color(0xFFFAFAFA);
 
   Color get secondarySurfaceColor =>
-      Theme
-          .of(context)
-          .colorScheme
-          .surfaceContainerHighest;
+      Theme.of(context).colorScheme.surfaceContainerHighest;
 
   Color get primaryTextColor =>
-      Theme
-          .of(context)
-          .colorScheme
-          .onSurface;
+      Theme.of(context).colorScheme.onSurface;
 
   Color get secondaryTextColor =>
-      Theme
-          .of(context)
-          .colorScheme
-          .onSurface
-          .withValues(alpha: .55);
+      Theme.of(context).colorScheme.onSurface.withValues(alpha: .55);
 
   @override
   void initState() {
@@ -70,7 +57,7 @@ class _BrandPageState extends State<BrandPage> {
 
   Future<void> loadFoods() async {
     final loadedFoods =
-    await DatabaseHelper.instance.getFoods(widget.brandId);
+        await DatabaseHelper.instance.getFoods(widget.brandId);
 
     final foodsWithPortions = <Map<String, dynamic>>[];
 
@@ -323,7 +310,7 @@ class _BrandPageState extends State<BrandPage> {
 
     final name = result["name"] as String;
     final portions =
-    result["portions"] as List<Map<String, dynamic>>;
+        result["portions"] as List<Map<String, dynamic>>;
 
     if (portions.length == 1) {
       await DatabaseHelper.instance.updateFood(
@@ -386,9 +373,7 @@ class _BrandPageState extends State<BrandPage> {
       builder: (_) => const _BatchAddDialog(),
     );
 
-    if (!mounted || text == null || text
-        .trim()
-        .isEmpty) {
+    if (!mounted || text == null || text.trim().isEmpty) {
       return;
     }
 
@@ -404,7 +389,7 @@ class _BrandPageState extends State<BrandPage> {
     }
 
     final existingFoods =
-    await DatabaseHelper.instance.getFoods(widget.brandId);
+        await DatabaseHelper.instance.getFoods(widget.brandId);
 
     final existingNames = existingFoods
         .map((food) => food["name"].toString().trim().toLowerCase())
@@ -426,8 +411,7 @@ class _BrandPageState extends State<BrandPage> {
     if (!mounted) return;
 
     final message = overwriteCount > 0
-        ? "批量添加完成，共处理 ${list
-        .length} 项产品；共 $overwriteCount 项同名产品，数值已覆盖"
+        ? "批量添加完成，共处理 ${list.length} 项产品；共 $overwriteCount 项同名产品，数值已覆盖"
         : "批量添加完成，共处理 ${list.length} 项产品";
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1101,7 +1085,7 @@ class _EditFoodDialogState extends State<_EditFoodDialog> {
 
     final nameController = portionNameControllers.removeAt(index);
     final caloriesController =
-    portionCalorieControllers.removeAt(index);
+        portionCalorieControllers.removeAt(index);
 
     setState(() {
       errorText = null;

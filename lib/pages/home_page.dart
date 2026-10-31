@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../database/database_helper.dart';
 import 'add_brand_page.dart';
 import 'brand_page.dart';
-import 'category_manage_page.dart';
 import 'settings_page.dart';
 import 'wheel_page.dart';
 
@@ -15,156 +14,156 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final db = DatabaseHelper.instance;
+  final _db = DatabaseHelper.instance;
 
-  List<Map<String, dynamic>> categories = [];
-  List<Map<String, dynamic>> brands = [];
-  List<Map<String, dynamic>> filteredCategories = [];
+  List<Map<String, dynamic>> _categories = [];
+  List<Map<String, dynamic>> _brands = [];
+  List<Map<String, dynamic>> _filteredCategories = [];
 
-  String selectedCategory = "";
-  String searchText = "";
-  int bottomIndex = 0;
-  int wheelRefreshKey = 0;
-  int searchRequestId = 0;
+  String _selectedCategory = "";
+  String _searchText = "";
+  int _bottomIndex = 0;
+  int _wheelRefreshKey = 0;
+  int _searchRequestId = 0;
 
   @override
   void initState() {
     super.initState();
-    loadData();
+    _loadData();
   }
 
   /// 加载分类和品牌
-  Future<void> loadData() async {
-    final requestId = ++searchRequestId;
-    final categoryData = await db.getCategories();
+  Future<void> _loadData() async {
+    final requestId = ++_searchRequestId;
+    final categoryData = await _db.getCategories();
 
-    if (!mounted || requestId != searchRequestId) return;
+    if (!mounted || requestId != _searchRequestId) return;
 
     if (categoryData.isEmpty) {
       setState(() {
-        categories = [];
-        brands = [];
-        filteredCategories = [];
-        selectedCategory = "";
+        _categories = [];
+        _brands = [];
+        _filteredCategories = [];
+        _selectedCategory = "";
       });
       return;
     }
 
-    if (selectedCategory.isEmpty ||
-        !categoryData.any((e) => e["name"] == selectedCategory)) {
-      selectedCategory = categoryData.first["name"];
+    if (_selectedCategory.isEmpty ||
+        !categoryData.any((e) => e["name"] == _selectedCategory)) {
+      _selectedCategory = categoryData.first["name"];
     }
 
-    final brandData = await db.getBrands(selectedCategory);
+    final brandData = await _db.getBrands(_selectedCategory);
 
-    if (!mounted || requestId != searchRequestId) return;
+    if (!mounted || requestId != _searchRequestId) return;
 
     setState(() {
-      categories = categoryData;
-      filteredCategories = List.from(categoryData);
+      _categories = categoryData;
+      _filteredCategories = List.from(categoryData);
 
-      brands = brandData
+      _brands = brandData
           .where(
             (e) => e["name"]
-            .toString()
-            .toLowerCase()
-            .contains(searchText.toLowerCase()),
+                .toString()
+                .toLowerCase()
+                .contains(_searchText.toLowerCase()),
       )
           .toList();
     });
   }
 
-  Future<void> refreshWheel() async {
-    await loadData();
+  Future<void> _refreshWheel() async {
+    await _loadData();
 
     if (!mounted) return;
 
     setState(() {
-      wheelRefreshKey++;
+      _wheelRefreshKey++;
     });
   }
 
-  Future<void> loadBrands() async {
-    final requestId = ++searchRequestId;
-    final category = selectedCategory;
+  Future<void> _loadBrands() async {
+    final requestId = ++_searchRequestId;
+    final category = _selectedCategory;
 
     if (category.isEmpty) {
-      if (mounted && requestId == searchRequestId) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() {
-          brands = [];
+          _brands = [];
         });
       }
       return;
     }
 
-    final brandData = await db.getBrands(category);
+    final brandData = await _db.getBrands(category);
 
-    if (!mounted || requestId != searchRequestId) return;
+    if (!mounted || requestId != _searchRequestId) return;
 
     setState(() {
-      if (searchText.isEmpty) {
-        brands = brandData;
+      if (_searchText.isEmpty) {
+        _brands = brandData;
       } else {
-        brands = brandData
+        _brands = brandData
             .where(
               (e) => e["name"]
-              .toString()
-              .toLowerCase()
-              .contains(searchText.toLowerCase()),
-        )
+                  .toString()
+                  .toLowerCase()
+                  .contains(_searchText.toLowerCase()),
+            )
             .toList();
       }
     });
   }
 
-  Future<void> searchBrands(String keyword) async {
-    final requestId = ++searchRequestId;
-    searchText = keyword.trim();
-    final currentSearchText = searchText.toLowerCase();
+  Future<void> _searchBrands(String keyword) async {
+    final requestId = ++_searchRequestId;
+    _searchText = keyword.trim();
+    final currentSearchText = _searchText.toLowerCase();
 
-    if (searchText.isEmpty) {
-      filteredCategories = List.from(categories);
+    if (_searchText.isEmpty) {
+      _filteredCategories = List.from(_categories);
 
-      if (filteredCategories.isNotEmpty &&
-          !filteredCategories.any((e) => e["name"] == selectedCategory)) {
-        selectedCategory = filteredCategories.first["name"];
+      if (_filteredCategories.isNotEmpty &&
+          !_filteredCategories.any((e) => e["name"] == _selectedCategory)) {
+        _selectedCategory = _filteredCategories.first["name"];
       }
 
-      final category = selectedCategory;
+      final category = _selectedCategory;
 
       if (category.isEmpty) {
-        if (!mounted || requestId != searchRequestId) return;
+        if (!mounted || requestId != _searchRequestId) return;
 
         setState(() {
-          brands = [];
+          _brands = [];
         });
         return;
       }
 
-      final brandData = await db.getBrands(category);
+      final brandData = await _db.getBrands(category);
 
-      if (!mounted || requestId != searchRequestId) return;
+      if (!mounted || requestId != _searchRequestId) return;
 
       setState(() {
-        brands = brandData;
+        _brands = brandData;
       });
       return;
     }
 
     final result = <Map<String, dynamic>>[];
 
-    for (final category in categories) {
-      final list = await db.getBrands(category["name"] as String);
+    for (final category in _categories) {
+      final list = await _db.getBrands(category["name"] as String);
 
-      if (!mounted || requestId != searchRequestId) return;
+      if (!mounted || requestId != _searchRequestId) return;
 
       final matched = list
           .where(
             (e) => e["name"]
-            .toString()
-            .toLowerCase()
-            .contains(currentSearchText),
-      )
+                .toString()
+                .toLowerCase()
+                .contains(currentSearchText),
+          )
           .toList();
 
       if (matched.isNotEmpty) {
@@ -172,58 +171,49 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    if (!mounted || requestId != searchRequestId) return;
+    if (!mounted || requestId != _searchRequestId) return;
 
     if (result.isEmpty) {
       setState(() {
-        filteredCategories = [];
-        brands = [];
+        _filteredCategories = [];
+        _brands = [];
       });
       return;
     }
 
     final firstCategory = result.first["name"] as String;
-    final firstBrands = await db.getBrands(firstCategory);
+    final firstBrands = await _db.getBrands(firstCategory);
 
-    if (!mounted || requestId != searchRequestId) return;
+    if (!mounted || requestId != _searchRequestId) return;
 
-    selectedCategory = firstCategory;
+    _selectedCategory = firstCategory;
 
     setState(() {
-      filteredCategories = result;
-      brands = firstBrands
+      _filteredCategories = result;
+      _brands = firstBrands
           .where(
             (e) => e["name"]
-            .toString()
-            .toLowerCase()
-            .contains(currentSearchText),
-      )
+                .toString()
+                .toLowerCase()
+                .contains(currentSearchText),
+          )
           .toList();
     });
   }
 
-  Future<void> openAddBrand() async {
-    if (selectedCategory.isEmpty) return;
+  Future<void> _openAddBrand() async {
+    if (_selectedCategory.isEmpty) return;
 
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => AddBrandPage(category: selectedCategory),
+        builder: (_) => AddBrandPage(category: _selectedCategory),
       ),
     );
 
     if (result == true) {
-      await loadBrands();
+      await _loadBrands();
     }
-  }
-
-  Future<void> openCategoryManage() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CategoryManagePage()),
-    );
-
-    await loadData();
   }
 
   @override
@@ -234,7 +224,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: IndexedStack(
-        index: bottomIndex == 2 ? 1 : 0,
+        index: _bottomIndex == 2 ? 1 : 0,
         children: [
           SafeArea(
             child: Column(
@@ -258,7 +248,7 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               color: colorScheme.onSurface,
                             ),
-                            onChanged: searchBrands,
+                            onChanged: _searchBrands,
                             decoration: InputDecoration(
                               prefixIcon: Icon(
                                 Icons.search,
@@ -287,8 +277,8 @@ class _HomePageState extends State<HomePage> {
 
                           if (!mounted) return;
 
-                          await loadData();
-                          await refreshWheel();
+                          await _loadData();
+                          await _refreshWheel();
                         },
                         child: Container(
                           width: 48,
@@ -325,18 +315,18 @@ class _HomePageState extends State<HomePage> {
                         ),
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          itemCount: filteredCategories.length,
+                          itemCount: _filteredCategories.length,
                           itemBuilder: (_, index) {
                             final category =
-                            filteredCategories[index]["name"];
-                            final selected = category == selectedCategory;
+                            _filteredCategories[index]["name"];
+                            final selected = category == _selectedCategory;
 
                             return GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  selectedCategory = category;
+                                  _selectedCategory = category;
                                 });
-                                loadBrands();
+                                _loadBrands();
                               },
                               child: Container(
                                 margin: const EdgeInsets.symmetric(
@@ -372,10 +362,10 @@ class _HomePageState extends State<HomePage> {
                                           ),
                                         ),
                                       ),
-                                      if (selected && searchText.isEmpty) ...[
+                                      if (selected && _searchText.isEmpty) ...[
                                         const SizedBox(width: 4),
                                         Text(
-                                          "${brands.length}",
+                                          "${_brands.length}",
                                           style: TextStyle(
                                             color: colorScheme.onPrimary
                                                 .withValues(alpha: 0.70),
@@ -407,7 +397,7 @@ class _HomePageState extends State<HomePage> {
                             color: colorScheme.surface,
                             borderRadius: BorderRadius.circular(28),
                           ),
-                          child: brands.isEmpty
+                          child: _brands.isEmpty
                               ? Center(
                             child: Text(
                               "暂无品牌\n点击下方 + 添加",
@@ -420,9 +410,9 @@ class _HomePageState extends State<HomePage> {
                             ),
                           )
                               : ListView.builder(
-                            itemCount: brands.length,
+                            itemCount: _brands.length,
                             itemBuilder: (_, i) {
-                              final brand = brands[i];
+                              final brand = _brands[i];
 
                               return Padding(
                                 padding: const EdgeInsets.only(
@@ -446,13 +436,13 @@ class _HomePageState extends State<HomePage> {
                                           builder: (_) => BrandPage(
                                             brandId: brand["id"],
                                             brandName: brand["name"],
-                                            category: selectedCategory,
+                                            category: _selectedCategory,
                                           ),
                                         ),
                                       );
 
                                       if (result == true) {
-                                        await loadBrands();
+                                        await _loadBrands();
                                       }
                                     },
                                     child: Container(
@@ -524,7 +514,7 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // 转盘页
-          WheelPage(key: ValueKey(wheelRefreshKey)),
+          WheelPage(key: ValueKey(_wheelRefreshKey)),
         ],
       ),
 
@@ -540,9 +530,9 @@ class _HomePageState extends State<HomePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              navItem(Icons.menu_book, "热量库", 0),
-              addButton(),
-              navItem(Icons.casino_outlined, "转盘", 2),
+              _navItem(Icons.menu_book, "热量库", 0),
+              _addButton(),
+              _navItem(Icons.casino_outlined, "转盘", 2),
             ],
           ),
         ),
@@ -550,20 +540,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget navItem(IconData icon, String text, int index) {
+  Widget _navItem(IconData icon, String text, int index) {
     final colorScheme = Theme.of(context).colorScheme;
-    final selected = bottomIndex == index;
+    final selected = _bottomIndex == index;
 
     return GestureDetector(
       onTap: () async {
         if (index == 2) {
-          await refreshWheel();
+          await _refreshWheel();
         }
 
         if (!mounted) return;
 
         setState(() {
-          bottomIndex = index;
+          _bottomIndex = index;
         });
       },
       child: AnimatedContainer(
@@ -600,11 +590,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget addButton() {
+  Widget _addButton() {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: selectedCategory.isEmpty ? null : openAddBrand,
+      onTap: _selectedCategory.isEmpty ? null : _openAddBrand,
       child: Container(
         width: 58,
         height: 58,

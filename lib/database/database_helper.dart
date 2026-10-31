@@ -6,6 +6,19 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
+  static const List<String> _defaultCategories = [
+    "奶茶",
+    "果茶",
+    "咖啡",
+    "甜品",
+    "糖水",
+    "轻食",
+    "烘焙",
+    "三明治",
+    "西式快餐",
+    "中式快餐",
+  ];
+
   DatabaseHelper._init();
 
   Future<Database> get database async {
@@ -84,22 +97,9 @@ class DatabaseHelper {
   """);
 
     // 默认分类
-    const defaults = [
-      "奶茶",
-      "果茶",
-      "咖啡",
-      "甜品",
-      "糖水",
-      "轻食",
-      "烘焙",
-      "三明治",
-      "西式快餐",
-      "中式快餐",
-    ];
-
-    for (int i = 0; i < defaults.length; i++) {
+    for (int i = 0; i < _defaultCategories.length; i++) {
       await db.insert("categories", {
-        "name": defaults[i],
+        "name": _defaultCategories[i],
         "sortOrder": i,
       });
     }
@@ -122,21 +122,11 @@ class DatabaseHelper {
           0;
 
       if (count == 0) {
-        final defaults = [
-          "奶茶",
-          "果茶",
-          "咖啡",
-          "甜品",
-          "糖水",
-          "轻食",
-          "烘焙",
-          "三明治",
-          "西式快餐",
-          "中式快餐",
-        ];
-
-        for (int i = 0; i < defaults.length; i++) {
-          await db.insert("categories", {"name": defaults[i], "sortOrder": i});
+        for (int i = 0; i < _defaultCategories.length; i++) {
+          await db.insert("categories", {
+            "name": _defaultCategories[i],
+            "sortOrder": i,
+          });
         }
       }
     }
@@ -509,7 +499,7 @@ class DatabaseHelper {
     return db.transaction((txn) async {
       final defaultIndex = 0;
       final defaultCalories =
-      validPortions[defaultIndex]["calories"] as int;
+          validPortions[defaultIndex]["calories"] as int;
 
       int id;
 
@@ -746,8 +736,7 @@ class DatabaseHelper {
               break;
             }
 
-            final portionName =
-            (item["name"] ?? "").toString().trim();
+            final portionName = (item["name"] ?? "").toString().trim();
             final portionCalories = int.tryParse(
               (item["calories"] ?? "").toString(),
             );
@@ -909,9 +898,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> insertPresetRaw(
-      Map<String, dynamic> data,
-      ) async {
+  Future<void> insertPresetRaw(Map<String, dynamic> data) async {
     final db = await database;
     await db.insert("presets", data);
   }
@@ -943,12 +930,9 @@ class DatabaseHelper {
 
     await db.update(
       "brands",
-      {
-        "isTop": isTop ? 1 : 0,
-      },
+      {"isTop": isTop ? 1 : 0},
       where: "id=?",
       whereArgs: [id],
     );
   }
-
 }

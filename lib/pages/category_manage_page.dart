@@ -10,18 +10,18 @@ class CategoryManagePage extends StatefulWidget {
 }
 
 class _CategoryManagePageState extends State<CategoryManagePage> {
-  List<Map<String, dynamic>> categories = [];
+  List<Map<String, dynamic>> _categories = [];
 
   @override
   void initState() {
     super.initState();
-    loadCategories();
+    _loadCategories();
   }
 
-  Future<void> loadCategories() async {
+  Future<void> _loadCategories() async {
     final data = await DatabaseHelper.instance.getCategories();
 
-    categories = data
+    _categories = data
         .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
         .toList();
 
@@ -29,7 +29,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
   }
 
   // 新增分类
-  Future<void> addCategory() async {
+  Future<void> _addCategory() async {
     final controller = TextEditingController();
 
     final name = await showDialog<String>(
@@ -50,8 +50,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
             child: const Text("取消"),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, controller.text.trim()),
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text("确定"),
           ),
         ],
@@ -63,11 +62,11 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     if (name == null || name.isEmpty) return;
 
     await DatabaseHelper.instance.addCategory(name);
-    await loadCategories();
+    await _loadCategories();
   }
 
   // 编辑分类
-  Future<void> editCategory(Map<String, dynamic> item) async {
+  Future<void> _editCategory(Map<String, dynamic> item) async {
     final controller = TextEditingController(text: item["name"]);
 
     final name = await showDialog<String>(
@@ -88,8 +87,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
             child: const Text("取消"),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, controller.text.trim()),
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text("保存"),
           ),
         ],
@@ -101,11 +99,11 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     if (name == null || name.isEmpty) return;
 
     await DatabaseHelper.instance.updateCategory(item["id"], name);
-    await loadCategories();
+    await _loadCategories();
   }
 
   // 删除分类
-  Future<void> deleteCategory(Map<String, dynamic> item) async {
+  Future<void> _deleteCategory(Map<String, dynamic> item) async {
     final colorScheme = Theme.of(context).colorScheme;
 
     final ok = await showDialog<bool>(
@@ -135,19 +133,19 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
     if (ok != true) return;
 
     await DatabaseHelper.instance.deleteCategory(item["id"]);
-    await loadCategories();
+    await _loadCategories();
   }
 
   // 排序
-  Future<void> reorder(int oldIndex, int newIndex) async {
+  Future<void> _reorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
 
-    final item = categories.removeAt(oldIndex);
-    categories.insert(newIndex, item);
+    final item = _categories.removeAt(oldIndex);
+    _categories.insert(newIndex, item);
 
     setState(() {});
 
-    await DatabaseHelper.instance.updateCategoryOrder(categories);
+    await DatabaseHelper.instance.updateCategoryOrder(_categories);
   }
 
   @override
@@ -178,11 +176,11 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
           Expanded(
             child: ReorderableListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: categories.length,
-              onReorder: reorder,
+              itemCount: _categories.length,
+              onReorder: _reorder,
               buildDefaultDragHandles: false,
               itemBuilder: (context, index) {
-                final item = categories[index];
+                final item = _categories[index];
 
                 return Container(
                   key: ValueKey(item["id"]),
@@ -218,14 +216,14 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit_outlined),
-                          onPressed: () => editCategory(item),
+                          onPressed: () => _editCategory(item),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.delete_outline,
                             color: colorScheme.error,
                           ),
-                          onPressed: () => deleteCategory(item),
+                          onPressed: () => _deleteCategory(item),
                         ),
                       ],
                     ),
@@ -240,7 +238,7 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: addCategory,
+                onPressed: _addCategory,
                 icon: const Icon(Icons.add),
                 label: const Text("新增分类"),
                 style: ElevatedButton.styleFrom(

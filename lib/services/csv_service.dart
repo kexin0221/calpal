@@ -1,23 +1,25 @@
 class CsvService {
+  static final _caloriesPattern = RegExp(
+    r'^(\d+)(?:kcal|千卡|大卡|卡)?$',
+    caseSensitive: false,
+  );
+  static final _portionPattern = RegExp(
+    r'^(.+?)(\d+)\s*(?:kcal|千卡|大卡|卡)?$',
+    caseSensitive: false,
+  );
+
+  static int? _parseCalories(String text) {
+    final value = text.trim().replaceAll(RegExp(r'\s+'), '');
+    final match = _caloriesPattern.firstMatch(value);
+    final calories = int.tryParse(match?.group(1) ?? '');
+    return calories != null && calories > 0 ? calories : null;
+  }
+
   static List<Map<String, dynamic>> parseText(String input) {
     final text = input.replaceFirst('\uFEFF', '');
     final lines = text.split(RegExp(r'\r\n|\n|\r'));
     final foodsByName = <String, Map<String, dynamic>>{};
     var firstNonEmptyLine = true;
-
-    int? parseCalories(String text) {
-      final value = text.trim().replaceAll(RegExp(r'\s+'), '');
-
-      final match = RegExp(
-        r'^(\d+)(?:kcal|千卡|大卡|卡)?$',
-        caseSensitive: false,
-      ).firstMatch(value);
-
-      final calories = int.tryParse(match?.group(1) ?? '');
-      if (calories == null || calories <= 0) return null;
-
-      return calories;
-    }
 
     for (final rawLine in lines) {
       final line = rawLine.trim();
@@ -52,7 +54,7 @@ class CsvService {
       var valid = true;
 
       if (parts.length == 2) {
-        final calories = parseCalories(parts[1]);
+        final calories = _parseCalories(parts[1]);
 
         if (calories == null) continue;
 
@@ -65,10 +67,7 @@ class CsvService {
       }
 
       for (final part in parts.skip(1)) {
-        final match = RegExp(
-          r'^(.+?)(\d+)\s*(?:kcal|千卡|大卡|卡)?$',
-          caseSensitive: false,
-        ).firstMatch(part.trim());
+        final match = _portionPattern.firstMatch(part.trim());
 
         if (match == null) {
           valid = false;

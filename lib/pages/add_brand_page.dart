@@ -15,10 +15,10 @@ class AddBrandPage extends StatefulWidget {
 }
 
 class _AddBrandPageState extends State<AddBrandPage> {
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
-  Future<void> saveBrand() async {
-    final name = nameController.text.trim();
+  Future<void> _saveBrand() async {
+    final name = _nameController.text.trim();
 
     if (name.isEmpty) return;
 
@@ -27,14 +27,14 @@ class _AddBrandPageState extends State<AddBrandPage> {
       name: name,
     );
 
-    if (mounted) {
-      Navigator.pop(context, true);
-    }
+    if (!mounted) return;
+
+    Navigator.pop(context, true);
   }
 
   @override
   void dispose() {
-    nameController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -76,7 +76,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: nameController,
+              controller: _nameController,
               style: TextStyle(
                 color: colorScheme.onSurface,
               ),
@@ -140,7 +140,7 @@ class _AddBrandPageState extends State<AddBrandPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: saveBrand,
+                onPressed: _saveBrand,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,

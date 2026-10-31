@@ -5,13 +5,14 @@ import '../database/database_helper.dart';
 
 class ImportService {
   static Future<void> importDatabase(File file) async {
+    final db = DatabaseHelper.instance;
     final json = jsonDecode(await file.readAsString());
 
-    await DatabaseHelper.instance.clearAllData();
+    await db.clearAllData();
 
     if (json["categories"] != null) {
       for (final item in json["categories"]) {
-        await DatabaseHelper.instance.insertCategoryRaw(
+        await db.insertCategoryRaw(
           Map<String, dynamic>.from(item),
         );
       }
@@ -19,7 +20,7 @@ class ImportService {
 
     if (json["brands"] != null) {
       for (final item in json["brands"]) {
-        await DatabaseHelper.instance.insertBrandRaw(
+        await db.insertBrandRaw(
           Map<String, dynamic>.from(item),
         );
       }
@@ -27,7 +28,7 @@ class ImportService {
 
     if (json["foods"] != null) {
       for (final item in json["foods"]) {
-        await DatabaseHelper.instance.insertFoodRaw(
+        await db.insertFoodRaw(
           Map<String, dynamic>.from(item),
         );
       }
@@ -35,7 +36,7 @@ class ImportService {
 
     if (json["presets"] != null) {
       for (final item in json["presets"]) {
-        await DatabaseHelper.instance.insertPresetRaw(
+        await db.insertPresetRaw(
           Map<String, dynamic>.from(item),
         );
       }

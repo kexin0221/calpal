@@ -753,6 +753,7 @@ class _WheelPageState extends State<WheelPage>
     controller.addListener(_updateRotation);
 
     await controller.forward(from: 0);
+    if (!mounted) return;
 
     // 指针咔哒动画
     setState(() => pointerOffset = 8);
@@ -760,6 +761,7 @@ class _WheelPageState extends State<WheelPage>
     await Future.delayed(
       const Duration(milliseconds: 70),
     );
+    if (!mounted) return;
 
     setState(() => pointerOffset = 0);
 

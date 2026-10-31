@@ -17,54 +17,54 @@ class AddFoodPage extends StatefulWidget {
 }
 
 class _AddFoodPageState extends State<AddFoodPage> {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController calorieController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _calorieController = TextEditingController();
 
-  bool hasMultiplePortions = false;
+  bool _hasMultiplePortions = false;
 
-  final List<TextEditingController> portionNameControllers = [];
-  final List<TextEditingController> portionCalorieControllers = [];
+  final List<TextEditingController> _portionNameControllers = [];
+  final List<TextEditingController> _portionCalorieControllers = [];
 
-  void addPortion() {
+  void _addPortion() {
     setState(() {
-      portionNameControllers.add(TextEditingController());
-      portionCalorieControllers.add(TextEditingController());
+      _portionNameControllers.add(TextEditingController());
+      _portionCalorieControllers.add(TextEditingController());
     });
   }
 
-  void removePortion(int index) {
+  void _removePortion(int index) {
     setState(() {
-      portionNameControllers.removeAt(index).dispose();
-      portionCalorieControllers.removeAt(index).dispose();
+      _portionNameControllers.removeAt(index).dispose();
+      _portionCalorieControllers.removeAt(index).dispose();
     });
   }
 
-  void toggleMultiplePortions(bool value) {
+  void _toggleMultiplePortions(bool value) {
     setState(() {
-      hasMultiplePortions = value;
+      _hasMultiplePortions = value;
 
-      if (value && portionNameControllers.isEmpty) {
+      if (value && _portionNameControllers.isEmpty) {
         for (int i = 0; i < 2; i++) {
-          portionNameControllers.add(TextEditingController());
-          portionCalorieControllers.add(TextEditingController());
+          _portionNameControllers.add(TextEditingController());
+          _portionCalorieControllers.add(TextEditingController());
         }
       }
 
       if (!value) {
-        for (final controller in portionNameControllers) {
+        for (final controller in _portionNameControllers) {
           controller.dispose();
         }
-        for (final controller in portionCalorieControllers) {
+        for (final controller in _portionCalorieControllers) {
           controller.dispose();
         }
-        portionNameControllers.clear();
-        portionCalorieControllers.clear();
+        _portionNameControllers.clear();
+        _portionCalorieControllers.clear();
       }
     });
   }
 
-  Future<void> saveFood() async {
-    final name = nameController.text.trim();
+  Future<void> _saveFood() async {
+    final name = _nameController.text.trim();
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,8 +73,8 @@ class _AddFoodPageState extends State<AddFoodPage> {
       return;
     }
 
-    if (!hasMultiplePortions) {
-      final calories = int.tryParse(calorieController.text);
+    if (!_hasMultiplePortions) {
+      final calories = int.tryParse(_calorieController.text);
 
       if (calories == null || calories <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,10 +91,10 @@ class _AddFoodPageState extends State<AddFoodPage> {
     } else {
       final portions = <Map<String, dynamic>>[];
 
-      for (int i = 0; i < portionNameControllers.length; i++) {
-        final portionName = portionNameControllers[i].text.trim();
+      for (int i = 0; i < _portionNameControllers.length; i++) {
+        final portionName = _portionNameControllers[i].text.trim();
         final calories = int.tryParse(
-          portionCalorieControllers[i].text.trim(),
+          _portionCalorieControllers[i].text.trim(),
         );
 
         if (portionName.isEmpty || calories == null || calories <= 0) {
@@ -117,21 +117,21 @@ class _AddFoodPageState extends State<AddFoodPage> {
       );
     }
 
-    if (mounted) {
-      Navigator.pop(context, true);
-    }
+    if (!mounted) return;
+
+    Navigator.pop(context, true);
   }
 
   @override
   void dispose() {
-    nameController.dispose();
-    calorieController.dispose();
+    _nameController.dispose();
+    _calorieController.dispose();
 
-    for (final controller in portionNameControllers) {
+    for (final controller in _portionNameControllers) {
       controller.dispose();
     }
 
-    for (final controller in portionCalorieControllers) {
+    for (final controller in _portionCalorieControllers) {
       controller.dispose();
     }
 
@@ -180,7 +180,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                     ),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: nameController,
+                      controller: _nameController,
                       style: TextStyle(
                         color: colorScheme.onSurface,
                       ),
@@ -198,11 +198,11 @@ class _AddFoodPageState extends State<AddFoodPage> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      value: hasMultiplePortions,
-                      onChanged: toggleMultiplePortions,
+                      value: _hasMultiplePortions,
+                      onChanged: _toggleMultiplePortions,
                     ),
                     const SizedBox(height: 8),
-                    if (!hasMultiplePortions) ...[
+                    if (!_hasMultiplePortions) ...[
                       Text(
                         "热量（kcal）",
                         style: TextStyle(
@@ -212,7 +212,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
-                        controller: calorieController,
+                        controller: _calorieController,
                         keyboardType: TextInputType.number,
                         style: TextStyle(
                           color: colorScheme.onSurface,
@@ -223,7 +223,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                       ),
                     ] else ...[
                       for (int i = 0;
-                      i < portionNameControllers.length;
+                      i < _portionNameControllers.length;
                       i++) ...[
                         Row(
                           children: [
@@ -236,9 +236,9 @@ class _AddFoodPageState extends State<AddFoodPage> {
                                 ),
                               ),
                             ),
-                            if (portionNameControllers.length > 2)
+                            if (_portionNameControllers.length > 2)
                               IconButton(
-                                onPressed: () => removePortion(i),
+                                onPressed: () => _removePortion(i),
                                 icon: const Icon(Icons.remove_circle_outline),
                                 color: colorScheme.error,
                               ),
@@ -249,7 +249,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                           children: [
                             Expanded(
                               child: TextField(
-                                controller: portionNameControllers[i],
+                                controller: _portionNameControllers[i],
                                 style: TextStyle(
                                   color: colorScheme.onSurface,
                                 ),
@@ -262,7 +262,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: TextField(
-                                controller: portionCalorieControllers[i],
+                                controller: _portionCalorieControllers[i],
                                 keyboardType: TextInputType.number,
                                 style: TextStyle(
                                   color: colorScheme.onSurface,
@@ -280,7 +280,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: addPortion,
+                          onPressed: _addPortion,
                           icon: const Icon(Icons.add),
                           label: const Text("添加规格"),
                         ),
@@ -295,7 +295,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: saveFood,
+                onPressed: _saveFood,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,

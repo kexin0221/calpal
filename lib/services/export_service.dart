@@ -7,16 +7,13 @@ import '../database/database_helper.dart';
 
 class ExportService {
   static Future<File> exportDatabase() async {
-    final _ = await DatabaseHelper.instance.getCategories();
-    final _ = await DatabaseHelper.instance.getAllBrands();
-    final _ = await DatabaseHelper.instance.getAllFoods();
-
+    final db = DatabaseHelper.instance;
     final data = {
       "version": 6,
-      "categories": await DatabaseHelper.instance.getCategories(),
-      "brands": await DatabaseHelper.instance.getAllBrands(),
-      "foods": await DatabaseHelper.instance.getAllFoods(),
-      "presets": await DatabaseHelper.instance.getPresets(),
+      "categories": await db.getCategories(),
+      "brands": await db.getAllBrands(),
+      "foods": await db.getAllFoods(),
+      "presets": await db.getPresets(),
     };
 
     final dir = await getApplicationDocumentsDirectory();
