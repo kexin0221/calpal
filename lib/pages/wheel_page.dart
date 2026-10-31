@@ -47,6 +47,7 @@ class _WheelPageState extends State<WheelPage>
 
   String resultBrand = "";
   String resultFood = "";
+  String resultPortion = "";
   int resultCalories = 0;
 
   @override
@@ -67,7 +68,21 @@ class _WheelPageState extends State<WheelPage>
 
     categories = await db.getCategories();
     brands = await db.getAllBrands();
-    foods = await db.getAllFoods();
+
+    final loadedFoods = await db.getAllFoods();
+
+    foods = [];
+
+    for (final food in loadedFoods) {
+      final portions = await db.getFoodPortions(
+        food["id"] as int,
+      );
+
+      foods.add({
+        ...food,
+        "portions": portions,
+      });
+    }
     presets = await db.getPresets();
 
     filterFoods();
@@ -242,78 +257,90 @@ class _WheelPageState extends State<WheelPage>
       for (var b in brands) b["id"]: b,
     };
 
-    allCandidates = foods.where((food) {
+    final isDrinkMode = selectedBrands.isNotEmpty &&
+        selectedBrands.any(
+              (id) => brandMap[id]?['category'] == '饮品',
+        );
+
+    bool matchesCalorieRange(int calories) {
+      if (selectedRanges.isEmpty) return true;
+
+      if (isDrinkMode) {
+        return (selectedRanges.contains("0-150") && calories < 150) ||
+            (selectedRanges.contains("150-220") &&
+                calories >= 150 &&
+                calories < 220) ||
+            (selectedRanges.contains("220-300") &&
+                calories >= 220 &&
+                calories < 300) ||
+            (selectedRanges.contains("300+") && calories >= 300);
+      }
+
+      return (selectedRanges.contains("0-300") && calories < 300) ||
+          (selectedRanges.contains("300-400") &&
+              calories >= 300 &&
+              calories < 400) ||
+          (selectedRanges.contains("400-500") &&
+              calories >= 400 &&
+              calories < 500) ||
+          (selectedRanges.contains("500+") && calories >= 500);
+    }
+
+    allCandidates = [];
+
+    for (final food in foods) {
       final brand = brandMap[food["brandId"]];
 
-      if (brand == null) return false;
+      if (brand == null) continue;
 
       if (selectedCategories.isNotEmpty &&
           !selectedCategories.contains(brand["category"])) {
-        return false;
+        continue;
       }
 
-      if (selectedBrands.isNotEmpty && !selectedBrands.contains(brand["id"])) {
-        return false;
+      if (selectedBrands.isNotEmpty &&
+          !selectedBrands.contains(brand["id"])) {
+        continue;
       }
 
-      final c = food["calories"] as int;
+      final portions = food["portions"] as List? ?? [];
 
-      final isDrinkMode = selectedBrands.isNotEmpty &&
-          selectedBrands.any(
-                (id) => brandMap[id]?['category'] == '饮品',
-          );
+      if (portions.isEmpty) {
+        final calories = food["calories"] as int;
 
-      if (selectedRanges.isNotEmpty) {
-        bool ok = false;
+        if (!matchesCalorieRange(calories)) continue;
 
-        if (isDrinkMode) {
-          if (selectedRanges.contains("0-150") && c < 150) {
-            ok = true;
-          }
+        allCandidates.add({
+          ...food,
+          "portionId": null,
+          "portionName": "",
+          "calories": calories,
+          "candidateKey": "food_${food["id"]}_single",
+        });
+      } else {
+        for (final item in portions) {
+          final portion = Map<String, dynamic>.from(item as Map);
+          final calories = portion["calories"] as int;
 
-          if (selectedRanges.contains("150-220") && c >= 150 && c < 220) {
-            ok = true;
-          }
+          if (!matchesCalorieRange(calories)) continue;
 
-          if (selectedRanges.contains("220-300") && c >= 220 && c < 300) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("300+") && c >= 300) {
-            ok = true;
-          }
-        } else {
-          if (selectedRanges.contains("0-300") && c < 300) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("300-400") && c >= 300 && c < 400) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("400-500") && c >= 400 && c < 500) {
-            ok = true;
-          }
-
-          if (selectedRanges.contains("500+") && c >= 500) {
-            ok = true;
-          }
+          allCandidates.add({
+            ...food,
+            "portionId": portion["id"],
+            "portionName": portion["name"].toString(),
+            "calories": calories,
+            "candidateKey":
+            "food_${food["id"]}_portion_${portion["id"]}",
+          });
         }
-
-        if (!ok) return false;
       }
-
-      return true;
-    }).toList();
+    }
 
     allCandidates.shuffle();
 
-    // 修改分类/品牌/热量筛选后，
-    // 默认全部候选产品重新参与转盘
     hasStartedSpinning = false;
-    candidates = List<Map<String, dynamic>>.from(
-      allCandidates,
-    );
+
+    candidates = List<Map<String, dynamic>>.from(allCandidates);
 
     wheelFoods = candidates.take(min(12, candidates.length)).toList();
 
@@ -346,7 +373,9 @@ class _WheelPageState extends State<WheelPage>
     }
 
     // 当前已经选中的产品
-    final selectedFoodIds = candidates.map((food) => food["id"] as int).toSet();
+    final selectedFoodIds = candidates
+        .map((food) => food["id"] as int)
+        .toSet();
 
     // 当前弹窗左侧选中的品牌
     int? selectedBrandId;
@@ -379,13 +408,22 @@ class _WheelPageState extends State<WheelPage>
                 : candidateBrands.first["id"] as int;
 
             final visibleFoods = allCandidates
-                .where(
-                  (food) => food["brandId"] == selectedBrandId,
+                .where((food) => food["brandId"] == selectedBrandId)
+                .fold<Map<int, Map<String, dynamic>>>(
+              {},
+                  (map, food) {
+                map.putIfAbsent(
+                  food["id"] as int,
+                      () => food,
+                );
+                return map;
+              },
             )
+                .values
                 .toList();
 
             final selectedCount = selectedFoodIds.length;
-            final totalCount = allCandidates.length;
+            final totalCount = allCandidates.map((food) => food["id"]).toSet().length;
 
             final allVisibleSelected = visibleFoods.isNotEmpty &&
                 visibleFoods.every(
@@ -443,9 +481,9 @@ class _WheelPageState extends State<WheelPage>
                                 final brandId = brand["id"] as int;
                                 final selected = brandId == selectedBrandId;
                                 final brandFoodCount = allCandidates
-                                    .where(
-                                      (food) => food["brandId"] == brandId,
-                                )
+                                    .where((food) => food["brandId"] == brandId)
+                                    .map((food) => food["id"] as int)
+                                    .toSet()
                                     .length;
 
                                 return GestureDetector(
@@ -543,18 +581,12 @@ class _WheelPageState extends State<WheelPage>
                                           : () {
                                         setSheet(() {
                                           if (allVisibleSelected) {
-                                            for (final food
-                                            in visibleFoods) {
-                                              selectedFoodIds.remove(
-                                                food["id"] as int,
-                                              );
+                                            for (final food in visibleFoods) {
+                                              selectedFoodIds.remove(food["id"] as int);
                                             }
                                           } else {
-                                            for (final food
-                                            in visibleFoods) {
-                                              selectedFoodIds.add(
-                                                food["id"] as int,
-                                              );
+                                            for (final food in visibleFoods) {
+                                              selectedFoodIds.add(food["id"] as int);
                                             }
                                           }
                                         });
@@ -588,46 +620,20 @@ class _WheelPageState extends State<WheelPage>
                                       final foodId = food["id"] as int;
 
                                       return CheckboxListTile(
-                                        key: ValueKey(
-                                          "candidate_$foodId",
-                                        ),
-                                        value: selectedFoodIds.contains(
-                                          foodId,
-                                        ),
-                                        activeColor: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                        key: ValueKey("candidate_$foodId"),
+                                        value: selectedFoodIds.contains(foodId),
+                                        activeColor: Theme.of(context).colorScheme.primary,
                                         contentPadding: EdgeInsets.zero,
                                         title: Text(
                                           food["name"].toString(),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                          ),
+                                          style: const TextStyle(fontSize: 14),
                                         ),
-                                        subtitle: Text(
-                                          "${food["calories"]} kcal",
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: .55),
-                                          ),
-                                        ),
-                                        controlAffinity:
-                                        ListTileControlAffinity
-                                            .leading,
+                                        controlAffinity: ListTileControlAffinity.leading,
                                         onChanged: (_) {
                                           setSheet(() {
-                                            selectedFoodIds.contains(
-                                              foodId,
-                                            )
-                                                ? selectedFoodIds.remove(
-                                              foodId,
-                                            )
-                                                : selectedFoodIds.add(
-                                              foodId,
-                                            );
+                                            selectedFoodIds.contains(foodId)
+                                                ? selectedFoodIds.remove(foodId)
+                                                : selectedFoodIds.add(foodId);
                                           });
                                         },
                                       );
@@ -655,9 +661,7 @@ class _WheelPageState extends State<WheelPage>
                         onPressed: () {
                           candidates = allCandidates
                               .where(
-                                (food) => selectedFoodIds.contains(
-                              food["id"] as int,
-                            ),
+                                (food) => selectedFoodIds.contains(food["id"] as int),
                           )
                               .toList();
 
@@ -704,6 +708,7 @@ class _WheelPageState extends State<WheelPage>
       hasStartedSpinning = true;
       resultBrand = "";
       resultFood = "";
+      resultPortion = "";
       resultCalories = 0;
     });
 
@@ -769,6 +774,7 @@ class _WheelPageState extends State<WheelPage>
         angle = endAngle % (2 * pi);
         resultBrand = "";
         resultFood = food["name"].toString();
+        resultPortion = food["portionName"]?.toString() ?? "";
         resultCalories = food["calories"] as int;
         spinning = false;
       });
@@ -781,6 +787,7 @@ class _WheelPageState extends State<WheelPage>
       angle = endAngle % (2 * pi);
       resultBrand = brand["name"];
       resultFood = food["name"];
+      resultPortion = food["portionName"]?.toString() ?? "";
       resultCalories = food["calories"];
 
       spinning = false;
@@ -1443,7 +1450,7 @@ class _WheelPageState extends State<WheelPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "共 ${candidates.length} 个候选产品",
+                      "共 ${candidates.map((food) => food["id"]).toSet().length} 个候选产品",
                       style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -1554,6 +1561,21 @@ class _WheelPageState extends State<WheelPage>
                             .onSurface,
                       ),
                     ),
+
+                    if (resultPortion.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        resultPortion,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: .65),
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 6),
 
@@ -1712,9 +1734,13 @@ class WheelPainter extends CustomPainter {
         a + pi / 2,
       );
 
-      final lines = _split(
-        foods[i]["name"].toString(),
-      );
+      final foodName = foods[i]["name"].toString();
+      final portionName = foods[i]["portionName"]?.toString() ?? "";
+
+      final lines = [
+        ..._split(foodName),
+        if (portionName.isNotEmpty) ..._split(portionName),
+      ];
 
       final tp = TextPainter(
         text: TextSpan(
