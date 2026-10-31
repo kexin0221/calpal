@@ -117,7 +117,65 @@ class _BrandPageState extends State<BrandPage> {
   }
 
   void applyFilterAndSort() {
-    displayFoods = List<Map<String, dynamic>>.from(foods);
+    bool matchesFilter(int calories) {
+      if (widget.category == "饮品") {
+        if (selectedFilters.contains("0-150") && calories < 150) {
+          return true;
+        }
+
+        if (selectedFilters.contains("150-220") &&
+            calories >= 150 && calories < 220) {
+          return true;
+        }
+
+        if (selectedFilters.contains("220-300") &&
+            calories >= 220 && calories < 300) {
+          return true;
+        }
+
+        if (selectedFilters.contains("300+") && calories >= 300) {
+          return true;
+        }
+      } else {
+        if (selectedFilters.contains("0-400") && calories < 400) {
+          return true;
+        }
+
+        if (selectedFilters.contains("400-500") &&
+            calories >= 400 && calories < 500) {
+          return true;
+        }
+
+        if (selectedFilters.contains("500-600") &&
+            calories >= 500 && calories < 600) {
+          return true;
+        }
+
+        if (selectedFilters.contains("600+") && calories >= 600) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    displayFoods = foods.map((food) {
+      final copy = Map<String, dynamic>.from(food);
+
+      final portions = List<Map<String, dynamic>>.from(
+        food["portions"] as List<Map<String, dynamic>>,
+      );
+
+      copy["isMultiPortion"] = portions.length > 1;
+
+      if (selectedFilters.isNotEmpty && portions.length > 1) {
+        copy["portions"] = portions.where((portion) {
+          return matchesFilter(portion["calories"] as int);
+        }).toList();
+      }
+
+      return copy;
+    }).toList();
 
     if (searchText.isNotEmpty) {
       displayFoods = displayFoods.where((food) {
@@ -129,50 +187,32 @@ class _BrandPageState extends State<BrandPage> {
 
     if (selectedFilters.isNotEmpty) {
       displayFoods = displayFoods.where((food) {
-        final c = food["calories"] as int;
+        final portions = food["portions"] as List<Map<String, dynamic>>;
 
-        if (widget.category == "饮品") {
-          if (selectedFilters.contains("0-150") && c < 150) {
-            return true;
-          }
-
-          if (selectedFilters.contains("150-220") && c >= 150 && c < 220) {
-            return true;
-          }
-
-          if (selectedFilters.contains("220-300") && c >= 220 && c < 300) {
-            return true;
-          }
-
-          if (selectedFilters.contains("300+") && c >= 300) {
-            return true;
-          }
-
-          return false;
+        if (food["isMultiPortion"] == true) {
+          return portions.isNotEmpty;
         }
 
-        if (selectedFilters.contains("0-400") && c < 400) {
-          return true;
-        }
-
-        if (selectedFilters.contains("400-500") && c >= 400 && c < 500) {
-          return true;
-        }
-
-        if (selectedFilters.contains("500-600") && c >= 500 && c < 600) {
-          return true;
-        }
-
-        if (selectedFilters.contains("600+") && c >= 600) {
-          return true;
-        }
-
-        return false;
+        return matchesFilter(food["calories"] as int);
       }).toList();
     }
 
+    int getSortCalories(Map<String, dynamic> food) {
+      if (food["isMultiPortion"] == true) {
+        final portions = food["portions"] as List<Map<String, dynamic>>;
+
+        if (portions.isNotEmpty) {
+          return portions
+              .map((portion) => portion["calories"] as int)
+              .reduce((a, b) => a < b ? a : b);
+        }
+      }
+
+      return food["calories"] as int;
+    }
+
     displayFoods.sort((a, b) {
-      final result = a["calories"].compareTo(b["calories"]);
+      final result = getSortCalories(a).compareTo(getSortCalories(b));
       return sortAscending ? result : -result;
     });
 
@@ -270,301 +310,34 @@ class _BrandPageState extends State<BrandPage> {
   }
 
   Future<void> editFood(Map<String, dynamic> food) async {
-    final nameController = TextEditingController(text: food["name"]);
-    final originalPortions = List<Map<String, dynamic>>.from(
-      food["portions"] as List<Map<String, dynamic>>,
+    final originalFood = foods.firstWhere(
+          (item) => item["id"] == food["id"],
     );
 
-    final isMultiPortion = originalPortions.length > 1;
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => _EditFoodDialog(food: originalFood),
+    );
 
-    if (!isMultiPortion) {
-      final calorieController = TextEditingController(
-        text: food["calories"].toString(),
-      );
+    if (!mounted || result == null) return;
 
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text("编辑产品"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: "产品名称",
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: calorieController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "热量(kcal)",
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                FocusScope.of(dialogContext).unfocus();
-                Navigator.pop(dialogContext, false);
-              },
-              child: const Text("取消"),
-            ),
-            FilledButton(
-              onPressed: () {
-                FocusScope.of(dialogContext).unfocus();
-                Navigator.pop(dialogContext, true);
-              },
-              child: const Text("保存"),
-            ),
-          ],
-        ),
-      );
+    final name = result["name"] as String;
+    final portions =
+    result["portions"] as List<Map<String, dynamic>>;
 
-      final name = nameController.text.trim();
-      final calories = int.tryParse(calorieController.text);
-
-      nameController.dispose();
-      calorieController.dispose();
-
-      if (ok != true) return;
-
-      if (name.isEmpty || calories == null || calories <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("请检查产品名称和热量")),
-        );
-        return;
-      }
-
+    if (portions.length == 1) {
       await DatabaseHelper.instance.updateFood(
-        id: food["id"],
+        id: originalFood["id"],
         name: name,
-        calories: calories,
+        calories: portions.first["calories"] as int,
       );
     } else {
-      final portionNameControllers = originalPortions
-          .map(
-            (portion) => TextEditingController(
-          text: portion["name"].toString(),
-        ),
-      )
-          .toList();
-
-      final portionCalorieControllers = originalPortions
-          .map(
-            (portion) => TextEditingController(
-          text: portion["calories"].toString(),
-        ),
-      )
-          .toList();
-
-      final removedNameControllers = <TextEditingController>[];
-      final removedCalorieControllers = <TextEditingController>[];
-
-      String? errorText;
-
-      final result = await showDialog<Map<String, dynamic>>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("编辑多规格产品"),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: "产品名称",
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      for (int i = 0;
-                      i < portionNameControllers.length;
-                      i++)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: TextField(
-                                  controller: portionNameControllers[i],
-                                  decoration: InputDecoration(
-                                    labelText: "规格 ${i + 1}",
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                flex: 2,
-                                child: TextField(
-                                  controller: portionCalorieControllers[i],
-                                  keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    labelText: "热量(kcal)",
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: portionNameControllers.length <= 1
-                                    ? null
-                                    : () {
-                                  setDialogState(() {
-                                    removedNameControllers.add(
-                                      portionNameControllers.removeAt(i),
-                                    );
-                                    removedCalorieControllers.add(
-                                      portionCalorieControllers.removeAt(i),
-                                    );
-                                    errorText = null;
-                                  });
-                                },
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () {
-                            setDialogState(() {
-                              portionNameControllers.add(
-                                TextEditingController(),
-                              );
-                              portionCalorieControllers.add(
-                                TextEditingController(),
-                              );
-                              errorText = null;
-                            });
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text("添加规格"),
-                        ),
-                      ),
-                      if (errorText != null)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            errorText!,
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    FocusScope.of(dialogContext).unfocus();
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text("取消"),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final name = nameController.text.trim();
-
-                    if (name.isEmpty) {
-                      setDialogState(() {
-                        errorText = "请输入产品名称";
-                      });
-                      return;
-                    }
-
-                    final portions = <Map<String, dynamic>>[];
-
-                    for (int i = 0;
-                    i < portionNameControllers.length;
-                    i++) {
-                      final portionName =
-                      portionNameControllers[i].text.trim();
-                      final calories = int.tryParse(
-                        portionCalorieControllers[i].text.trim(),
-                      );
-
-                      if (portionName.isEmpty ||
-                          calories == null ||
-                          calories <= 0) {
-                        setDialogState(() {
-                          errorText = "请检查所有规格名称和热量";
-                        });
-                        return;
-                      }
-
-                      portions.add({
-                        "name": portionName,
-                        "calories": calories,
-                      });
-                    }
-
-                    FocusScope.of(dialogContext).unfocus();
-                    Navigator.pop(dialogContext, {
-                      "name": name,
-                      "portions": portions,
-                    });
-                  },
-                  child: const Text("保存"),
-                ),
-              ],
-            );
-          },
-        ),
+      await DatabaseHelper.instance.saveFoodWithPortions(
+        brandId: widget.brandId,
+        foodId: originalFood["id"] as int,
+        name: name,
+        portions: portions,
       );
-
-      nameController.dispose();
-
-      for (final controller in portionNameControllers) {
-        controller.dispose();
-      }
-
-      for (final controller in portionCalorieControllers) {
-        controller.dispose();
-      }
-
-      for (final controller in removedNameControllers) {
-        controller.dispose();
-      }
-
-      for (final controller in removedCalorieControllers) {
-        controller.dispose();
-      }
-
-      if (result == null) return;
-
-      final name = result["name"] as String;
-      final portions =
-      result["portions"] as List<Map<String, dynamic>>;
-
-      if (portions.length == 1) {
-        await DatabaseHelper.instance.updateFood(
-          id: food["id"],
-          name: name,
-          calories: portions.first["calories"] as int,
-        );
-      } else {
-        await DatabaseHelper.instance.saveFoodWithPortions(
-          brandId: widget.brandId,
-          foodId: food["id"] as int,
-          name: name,
-          portions: portions,
-        );
-      }
     }
 
     await loadFoods();
@@ -1128,7 +901,7 @@ class _BrandPageState extends State<BrandPage> {
                                 ),
                               ),
                             ),
-                            if (portions.length > 1)
+                            if (food["isMultiPortion"] == true)
                               Expanded(
                                 flex: 2,
                                 child: LayoutBuilder(
@@ -1229,6 +1002,349 @@ class _BrandPageState extends State<BrandPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EditFoodDialog extends StatefulWidget {
+  final Map<String, dynamic> food;
+
+  const _EditFoodDialog({
+    required this.food,
+  });
+
+  @override
+  State<_EditFoodDialog> createState() => _EditFoodDialogState();
+}
+
+class _EditFoodDialogState extends State<_EditFoodDialog> {
+  late final TextEditingController nameController;
+  late final TextEditingController calorieController;
+
+  bool isMultiPortion = false;
+
+  final portionNameControllers = <TextEditingController>[];
+  final portionCalorieControllers = <TextEditingController>[];
+
+  String? errorText;
+  bool isClosing = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    nameController = TextEditingController(
+      text: widget.food["name"].toString(),
+    );
+
+    final portions = List<Map<String, dynamic>>.from(
+      widget.food["portions"] as List<Map<String, dynamic>>,
+    );
+
+    isMultiPortion = portions.length > 1;
+
+    calorieController = TextEditingController(
+      text: widget.food["calories"].toString(),
+    );
+
+    if (isMultiPortion) {
+      for (final portion in portions) {
+        portionNameControllers.add(
+          TextEditingController(
+            text: portion["name"].toString(),
+          ),
+        );
+
+        portionCalorieControllers.add(
+          TextEditingController(
+            text: portion["calories"].toString(),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    calorieController.dispose();
+
+    for (final controller in portionNameControllers) {
+      controller.dispose();
+    }
+
+    for (final controller in portionCalorieControllers) {
+      controller.dispose();
+    }
+
+    super.dispose();
+  }
+
+  Future<void> closeDialog([Map<String, dynamic>? result]) async {
+    if (isClosing) return;
+
+    isClosing = true;
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    await Future<void>.delayed(
+      const Duration(milliseconds: 200),
+    );
+
+    if (!mounted) return;
+
+    Navigator.of(context).pop(result);
+  }
+
+  void removePortion(int index) {
+    if (portionNameControllers.length <= 1) return;
+
+    final nameController = portionNameControllers.removeAt(index);
+    final caloriesController =
+    portionCalorieControllers.removeAt(index);
+
+    setState(() {
+      errorText = null;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      nameController.dispose();
+      caloriesController.dispose();
+    });
+  }
+
+  void save() {
+    final name = nameController.text.trim();
+
+    if (name.isEmpty) {
+      setState(() {
+        errorText = "请输入产品名称";
+      });
+      return;
+    }
+
+    final portions = <Map<String, dynamic>>[];
+
+    if (!isMultiPortion) {
+      final calories = int.tryParse(calorieController.text.trim());
+
+      if (calories == null || calories <= 0) {
+        setState(() {
+          errorText = "请输入有效的热量";
+        });
+        return;
+      }
+
+      portions.add({
+        "name": "默认",
+        "calories": calories,
+      });
+    } else {
+      for (int i = 0; i < portionNameControllers.length; i++) {
+        final portionName =
+        portionNameControllers[i].text.trim();
+
+        final calories = int.tryParse(
+          portionCalorieControllers[i].text.trim(),
+        );
+
+        if (portionName.isEmpty ||
+            calories == null ||
+            calories <= 0) {
+          setState(() {
+            errorText = "请检查所有规格名称和热量";
+          });
+          return;
+        }
+
+        portions.add({
+          "name": portionName,
+          "calories": calories,
+        });
+      }
+    }
+
+    closeDialog({
+      "name": name,
+      "portions": portions,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
+
+    return AlertDialog(
+      title: Text("编辑产品"),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: "产品名称",
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (!isMultiPortion) ...[
+                TextField(
+                  controller: calorieController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "热量(kcal)",
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      final calories = calorieController.text.trim();
+
+                      setState(() {
+                        isMultiPortion = true;
+
+                        portionNameControllers.add(
+                          TextEditingController(text: "默认"),
+                        );
+
+                        portionCalorieControllers.add(
+                          TextEditingController(text: calories),
+                        );
+
+                        errorText = null;
+                      });
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 20),
+                          SizedBox(width: 6),
+                          Text("添加规格"),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              if (isMultiPortion) ...[
+                for (int i = 0;
+                i < portionNameControllers.length;
+                i++)
+                  Padding(
+                    key: ObjectKey(portionNameControllers[i]),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            controller: portionNameControllers[i],
+                            decoration: InputDecoration(
+                              labelText: "规格 ${i + 1}",
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: portionCalorieControllers[i],
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: "热量(kcal)",
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: portionNameControllers.length <= 1
+                              ? null
+                              : () => removePortion(i),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Icon(
+                              Icons.remove_circle_outline,
+                              color: portionNameControllers.length <= 1
+                                  ? Colors.grey
+                                  : Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      setState(() {
+                        portionNameControllers.add(
+                          TextEditingController(),
+                        );
+
+                        portionCalorieControllers.add(
+                          TextEditingController(),
+                        );
+
+                        errorText = null;
+                      });
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 20),
+                          SizedBox(width: 6),
+                          Text("添加规格"),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              if (errorText != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    errorText!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: isClosing ? null : () => closeDialog(),
+          child: const Text("取消"),
+        ),
+        FilledButton(
+          onPressed: isClosing ? null : save,
+          style: FilledButton.styleFrom(
+            backgroundColor: primaryColor,
+            foregroundColor: onPrimaryColor,
+          ),
+          child: const Text("保存"),
+        ),
+      ],
     );
   }
 }
