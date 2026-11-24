@@ -377,8 +377,8 @@ class _WheelPageState extends State<WheelPage>
         .map((food) => food["id"] as int)
         .toSet();
 
-    // 当前弹窗左侧选中的品牌
-    int? selectedBrandId;
+    // 当前弹窗左侧选中的品牌名称
+    String? selectedBrandName;
 
     await showModalBottomSheet(
       context: context,
@@ -396,19 +396,38 @@ class _WheelPageState extends State<WheelPage>
             final candidateBrandIds =
             allCandidates.map((food) => food["brandId"] as int).toSet();
 
-            final candidateBrands = brands
-                .where(
-                  (brand) => candidateBrandIds.contains(brand["id"]),
-            )
-                .toList();
+            // 按品牌名称去重，合并不同分类下的同名品牌
+            final candidateBrands = <Map<String, dynamic>>[];
+            final seenBrandNames = <String>{};
+
+            for (final brand in brands) {
+              final brandId = brand["id"] as int;
+              final brandName = brand["name"].toString();
+
+              if (candidateBrandIds.contains(brandId) &&
+                  seenBrandNames.add(brandName)) {
+                candidateBrands.add(brand);
+              }
+            }
 
             // 默认选择第一个品牌
-            selectedBrandId ??= candidateBrands.isEmpty
+            selectedBrandName ??= candidateBrands.isEmpty
                 ? null
-                : candidateBrands.first["id"] as int;
+                : candidateBrands.first["name"].toString();
 
+            // 获取所有同名品牌的 ID
+            final selectedBrandIds = brands
+                .where(
+                  (brand) =>
+              brand["name"].toString() == selectedBrandName &&
+                  candidateBrandIds.contains(brand["id"]),
+            )
+                .map((brand) => brand["id"] as int)
+                .toSet();
+
+            // 合并所有同名品牌下的候选产品，并按产品 ID 去重
             final visibleFoods = allCandidates
-                .where((food) => food["brandId"] == selectedBrandId)
+                .where((food) => selectedBrandIds.contains(food["brandId"]))
                 .fold<Map<int, Map<String, dynamic>>>(
               {},
                   (map, food) {
@@ -478,10 +497,15 @@ class _WheelPageState extends State<WheelPage>
                               itemCount: candidateBrands.length,
                               itemBuilder: (_, i) {
                                 final brand = candidateBrands[i];
-                                final brandId = brand["id"] as int;
-                                final selected = brandId == selectedBrandId;
+                                final brandName = brand["name"].toString();
+                                final selected = brandName == selectedBrandName;
+                                final brandIds = brands
+                                    .where((b) => b["name"].toString() == brandName)
+                                    .map((b) => b["id"] as int)
+                                    .toSet();
+
                                 final brandFoodCount = allCandidates
-                                    .where((food) => food["brandId"] == brandId)
+                                    .where((food) => brandIds.contains(food["brandId"]))
                                     .map((food) => food["id"] as int)
                                     .toSet()
                                     .length;
@@ -489,7 +513,7 @@ class _WheelPageState extends State<WheelPage>
                                 return GestureDetector(
                                   onTap: () {
                                     setSheet(() {
-                                      selectedBrandId = brandId;
+                                      selectedBrandName = brandName;
                                     });
                                   },
                                   child: Container(
@@ -558,14 +582,7 @@ class _WheelPageState extends State<WheelPage>
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        candidateBrands
-                                            .firstWhere(
-                                              (b) => b["id"] == selectedBrandId,
-                                          orElse: () => {
-                                            "name": "",
-                                          },
-                                        )["name"]
-                                            .toString(),
+                                        selectedBrandName ?? "",
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -1447,55 +1464,54 @@ class _WheelPageState extends State<WheelPage>
               ),
 
               // ===== 候选产品数量 + 修改按钮 =====
-              if (!hasStartedSpinning)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "共 ${candidates.map((food) => food["id"]).toSet().length} 个候选产品",
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: .55),
-                        fontSize: 12,
-                      ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "共 ${candidates.map((food) => food["id"]).toSet().length} 个候选产品",
+                    style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: .55),
+                      fontSize: 12,
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: showCandidateProducts,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.list_alt_outlined,
-                              size: 14,
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: showCandidateProducts,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.list_alt_outlined,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "修改产品",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "修改产品",
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 10),
 

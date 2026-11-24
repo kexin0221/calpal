@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-
+import 'package:flutter/services.dart';
 import '../database/database_helper.dart';
 import '../services/csv_service.dart';
 import 'add_food_page.dart';
@@ -419,6 +419,49 @@ class _BrandPageState extends State<BrandPage> {
     );
   }
 
+  Future<void> exportBrandFoods() async {
+    if (foods.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("当前品牌暂无产品")),
+      );
+      return;
+    }
+
+    final lines = foods.map((food) {
+      final name = food["name"].toString();
+      final portions = List<Map<String, dynamic>>.from(
+        food["portions"] as List<Map<String, dynamic>>,
+      );
+
+      if (portions.length <= 1) {
+        return "$name，${food["calories"]}";
+      }
+
+      portions.sort((a, b) {
+        return (a["calories"] as int).compareTo(
+          b["calories"] as int,
+        );
+      });
+
+      return [
+        name,
+        ...portions.map(
+              (portion) => "${portion["name"]}${portion["calories"]}",
+        ),
+      ].join("，");
+    }).join("\n");
+
+    await Clipboard.setData(ClipboardData(text: lines));
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("已复制 ${foods.length} 个产品的信息"),
+      ),
+    );
+  }
+
   Future<void> renameBrand() async {
     final controller = TextEditingController(text: widget.brandName);
 
@@ -687,6 +730,9 @@ class _BrandPageState extends State<BrandPage> {
                   case "batch":
                     batchAddFoods();
                     break;
+                  case "export":
+                    exportBrandFoods();
+                    break;
                   case "rename":
                     renameBrand();
                     break;
@@ -722,6 +768,16 @@ class _BrandPageState extends State<BrandPage> {
                       Icon(Icons.playlist_add),
                       SizedBox(width: 10),
                       Text("批量添加"),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: "export",
+                  child: Row(
+                    children: [
+                      Icon(Icons.copy_outlined),
+                      SizedBox(width: 10),
+                      Text("导出产品信息"),
                     ],
                   ),
                 ),

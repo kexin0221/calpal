@@ -81,43 +81,46 @@ class _SettingsPageState extends State<SettingsPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Material(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
         ),
-        leading: CircleAvatar(
-          radius: 22,
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          child: Icon(
-            icon,
-            color: colorScheme.onSurface,
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 8,
           ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+          leading: CircleAvatar(
+            radius: 22,
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            child: Icon(
+              icon,
+              color: colorScheme.onSurface,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: colorScheme.onSurface.withValues(alpha: 0.65),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.65),
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
+          onTap: _loading ? null : onTap,
         ),
-        trailing: Icon(
-          Icons.chevron_right_rounded,
-          color: colorScheme.onSurface.withValues(alpha: 0.55),
-        ),
-        onTap: _loading ? null : onTap,
       ),
     );
   }
