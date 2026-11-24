@@ -382,6 +382,20 @@ class DatabaseHelper {
     return db.update("brands", {"name": name}, where: "id=?", whereArgs: [id]);
   }
 
+  Future<int> updateBrandCategory({
+    required int id,
+    required String category,
+  }) async {
+    final db = await database;
+
+    return db.update(
+      "brands",
+      {"category": category},
+      where: "id=?",
+      whereArgs: [id],
+    );
+  }
+
   Future<String> getBrandRemark(int id) async {
     final db = await database;
 

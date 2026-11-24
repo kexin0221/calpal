@@ -458,6 +458,75 @@ class _BrandPageState extends State<BrandPage> {
     }
   }
 
+  Future<void> changeBrandCategory() async {
+    final categories = await DatabaseHelper.instance.getCategories();
+
+    if (!mounted) return;
+
+    final newCategory = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("修改分类"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: categories.map((category) {
+              final name = category["name"] as String;
+              final isSelected = name == widget.category;
+
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                title: Text(name),
+                onTap: () => Navigator.pop(context, name),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("取消"),
+          ),
+        ],
+      ),
+    );
+
+    if (newCategory == null || newCategory == widget.category) return;
+
+    final exists = await DatabaseHelper.instance.brandExists(
+      category: newCategory,
+      name: widget.brandName,
+    );
+
+    if (exists) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("目标分类下已存在同名品牌")),
+      );
+      return;
+    }
+
+    await DatabaseHelper.instance.updateBrandCategory(
+      id: widget.brandId,
+      category: newCategory,
+    );
+
+    if (!mounted) return;
+
+    hasChanged = true;
+    Navigator.pop(context, true);
+  }
+
   Future<void> deleteBrand() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -621,6 +690,9 @@ class _BrandPageState extends State<BrandPage> {
                   case "rename":
                     renameBrand();
                     break;
+                  case "category":
+                    changeBrandCategory();
+                    break;
                   case "remark":
                     editRemark();
                     break;
@@ -660,6 +732,16 @@ class _BrandPageState extends State<BrandPage> {
                       Icon(Icons.edit_outlined),
                       SizedBox(width: 10),
                       Text("修改品牌名"),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: "category",
+                  child: Row(
+                    children: [
+                      Icon(Icons.drive_file_move_outline),
+                      SizedBox(width: 10),
+                      Text("修改分类"),
                     ],
                   ),
                 ),

@@ -179,6 +179,21 @@ class _CategoryManagePageState extends State<CategoryManagePage> {
               itemCount: _categories.length,
               onReorder: _reorder,
               buildDefaultDragHandles: false,
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    return Material(
+                      color: Colors.transparent,
+                      elevation: 6 * animation.value,
+                      borderRadius: BorderRadius.circular(18),
+                      clipBehavior: Clip.antiAlias,
+                      child: child,
+                    );
+                  },
+                  child: child,
+                );
+              },
               itemBuilder: (context, index) {
                 final item = _categories[index];
 
