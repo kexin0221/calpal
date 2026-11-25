@@ -8,11 +8,26 @@ import '../database/database_helper.dart';
 class ExportService {
   static Future<File> exportDatabase() async {
     final db = DatabaseHelper.instance;
+
+    final foods = await db.getAllFoods();
+    final foodsWithPortions = <Map<String, dynamic>>[];
+
+    for (final food in foods) {
+      final portions = await db.getFoodPortions(
+        food["id"] as int,
+      );
+
+      foodsWithPortions.add({
+        ...food,
+        "portions": portions,
+      });
+    }
+
     final data = {
-      "version": 6,
+      "version": 7,
       "categories": await db.getCategories(),
       "brands": await db.getAllBrands(),
-      "foods": await db.getAllFoods(),
+      "foods": foodsWithPortions,
       "presets": await db.getPresets(),
     };
 

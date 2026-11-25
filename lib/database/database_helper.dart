@@ -715,6 +715,13 @@ class DatabaseHelper {
     await db.insert("foods", data);
   }
 
+  Future<void> insertFoodPortionRaw(
+      Map<String, dynamic> data,
+      ) async {
+    final db = await database;
+    await db.insert("food_portions", data);
+  }
+
   Future<void> addFoodsBatch({
     required int brandId,
     required List<Map<String, dynamic>> foods,

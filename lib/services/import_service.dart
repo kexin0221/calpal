@@ -28,9 +28,19 @@ class ImportService {
 
     if (json["foods"] != null) {
       for (final item in json["foods"]) {
-        await db.insertFoodRaw(
-          Map<String, dynamic>.from(item),
-        );
+        final foodData = Map<String, dynamic>.from(item);
+
+        final portions = foodData.remove("portions");
+
+        await db.insertFoodRaw(foodData);
+
+        if (portions is List) {
+          for (final portion in portions) {
+            await db.insertFoodPortionRaw(
+              Map<String, dynamic>.from(portion),
+            );
+          }
+        }
       }
     }
 
